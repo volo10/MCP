@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "system_id": "league_system_prod",
+  "protocol_version": "league.v2",
+  "default_league_id": "league_2025_even_odd",
+  "network": {
+    "base_host": "localhost",
+    "default_league_manager_port": 8000,
+    "default_referee_port_range": [8001, 8010],
+    "default_player_port_range": [8101, 8200]
+  },
+  "security": {
+    "enable_auth_tokens": true,
+    "token_length": 32,
+    "token_ttl_hours": 24
+  },
+  "timeouts": {
+    "register_referee_timeout_sec": 10,
+    "register_player_timeout_sec": 10,
+    "game_join_ack_timeout_sec": 5,
+    "move_timeout_sec": 30,
+    "generic_response_timeout_sec": 10
+  },
+  "retry_policy": {
+    "max_retries": 3,
+    "backoff_strategy": "exponential",
+    "initial_delay_sec": 1.0
+  }
+}
+

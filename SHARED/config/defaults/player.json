@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "game_types": ["even_odd"],
+  "active": true,
+  "settings": {
+    "strategy": "random",
+    "auto_accept_invitations": true,
+    "log_decisions": true
+  }
+}
+

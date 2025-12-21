@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "games": [
+    {
+      "game_type": "even_odd",
+      "display_name": "Even/Odd",
+      "rules_module": "games.even_odd",
+      "move_types": ["choose_parity"],
+      "valid_choices": {
+        "choose_parity": ["even", "odd"]
+      },
+      "min_players": 2,
+      "max_players": 2,
+      "max_round_time_sec": 60
+    },
+    {
+      "game_type": "tic_tac_toe",
+      "display_name": "Tic-Tac-Toe",
+      "rules_module": "games.tic_tac_toe",
+      "move_types": ["place_mark"],
+      "valid_choices": {
+        "place_mark": ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
+      },
+      "min_players": 2,
+      "max_players": 2,
+      "max_round_time_sec": 120
+    }
+  ]
+}
+

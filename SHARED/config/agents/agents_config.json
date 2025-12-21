@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "league_manager": {
+    "endpoint": "http://localhost:8000/mcp",
+    "version": "1.0.0",
+    "max_concurrent_leagues": 5
+  },
+  "referees": [
+    {
+      "referee_id": "REF01",
+      "display_name": "Referee Alpha",
+      "endpoint": "http://localhost:8001/mcp",
+      "version": "1.0.0",
+      "game_types": ["even_odd"],
+      "max_concurrent_matches": 2,
+      "active": true
+    },
+    {
+      "referee_id": "REF02",
+      "display_name": "Referee Beta",
+      "endpoint": "http://localhost:8002/mcp",
+      "version": "1.0.0",
+      "game_types": ["even_odd"],
+      "max_concurrent_matches": 2,
+      "active": true
+    }
+  ],
+  "players": [
+    {
+      "player_id": "P01",
+      "display_name": "Agent Alpha",
+      "version": "1.0.0",
+      "preferred_leagues": ["league_2025_even_odd"],
+      "game_types": ["even_odd"],
+      "default_endpoint": "http://localhost:8101/mcp",
+      "active": true
+    },
+    {
+      "player_id": "P02",
+      "display_name": "Agent Beta",
+      "version": "1.0.0",
+      "preferred_leagues": ["league_2025_even_odd"],
+      "game_types": ["even_odd"],
+      "default_endpoint": "http://localhost:8102/mcp",
+      "active": true
+    },
+    {
+      "player_id": "P03",
+      "display_name": "Agent Gamma",
+      "version": "1.0.0",
+      "preferred_leagues": ["league_2025_even_odd"],
+      "game_types": ["even_odd"],
+      "default_endpoint": "http://localhost:8103/mcp",
+      "active": true
+    },
+    {
+      "player_id": "P04",
+      "display_name": "Agent Delta",
+      "version": "1.0.0",
+      "preferred_leagues": ["league_2025_even_odd"],
+      "game_types": ["even_odd"],
+      "default_endpoint": "http://localhost:8104/mcp",
+      "active": true
+    }
+  ]
+}
+

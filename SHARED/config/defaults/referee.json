@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "game_types": ["even_odd"],
+  "max_concurrent_matches": 2,
+  "active": true,
+  "settings": {
+    "strict_timeout": true,
+    "log_transcript": true,
+    "random_seed": null
+  }
+}
+
