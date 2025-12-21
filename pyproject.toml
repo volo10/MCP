@@ -1,0 +1,131 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-league-system"
+version = "1.0.0"
+description = "Multi-agent league system implementing the MCP protocol for AI agent communication"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "MCP League Team"}
+]
+keywords = [
+    "mcp",
+    "multi-agent",
+    "league",
+    "protocol",
+    "ai-agents",
+    "json-rpc",
+    "distributed-systems"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.5.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.1.0",
+]
+analysis = [
+    "jupyter>=1.0.0",
+    "matplotlib>=3.7.0",
+    "pandas>=2.0.0",
+    "seaborn>=0.12.0",
+]
+all = [
+    "mcp-league-system[dev,analysis]",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/mcp-league/mcp-league-system"
+"Documentation" = "https://github.com/mcp-league/mcp-league-system/blob/main/docs/PROJECT_DOCUMENTATION.md"
+"Bug Tracker" = "https://github.com/mcp-league/mcp-league-system/issues"
+
+[project.scripts]
+mcp-league = "run_league:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["SHARED*", "agents*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.md"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=SHARED/league_sdk --cov=agents --cov-report=term-missing --cov-report=html"
+testpaths = ["tests"]
+pythonpath = [".", "SHARED"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["SHARED/league_sdk", "agents"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+fail_under = 70
+show_missing = true
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | __pycache__
+    | \.mypy_cache
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+known_first_party = ["league_sdk", "agents"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

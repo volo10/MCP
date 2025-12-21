@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree /F \"C:\\\\D\\\\Code\\\\Multiple_Agents_With_LLMs\\\\MCP\")",
+      "Bash(wc:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(where:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(py -m pytest:*)"
+    ]
+  }
+}

@@ -36,6 +36,23 @@ from .repositories import (
 
 from .logger import JsonLogger
 
+from .parallel import (
+    ParallelConfig,
+    TaskResult,
+    ThreadSafeCounter,
+    ThreadSafeDict,
+    TaskQueue,
+    ParallelExecutor,
+    WorkerPool,
+    run_in_thread,
+    run_in_process,
+    parallel_map_cpu,
+    parallel_map_io,
+    get_cpu_count,
+    get_recommended_thread_count,
+    get_recommended_process_count,
+)
+
 __all__ = [
     # Config Models
     "NetworkConfig",
@@ -61,6 +78,21 @@ __all__ = [
     "PlayerHistoryRepository",
     # Logger
     "JsonLogger",
+    # Parallel Processing
+    "ParallelConfig",
+    "TaskResult",
+    "ThreadSafeCounter",
+    "ThreadSafeDict",
+    "TaskQueue",
+    "ParallelExecutor",
+    "WorkerPool",
+    "run_in_thread",
+    "run_in_process",
+    "parallel_map_cpu",
+    "parallel_map_io",
+    "get_cpu_count",
+    "get_recommended_thread_count",
+    "get_recommended_process_count",
 ]
 
 __version__ = "1.0.0"

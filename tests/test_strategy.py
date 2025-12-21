@@ -63,12 +63,14 @@ class TestRandomStrategy(unittest.TestCase):
     
     def test_reproducibility_with_seed(self):
         """Test that same seed produces same sequence."""
+        # Generate first sequence immediately after seeding
         strategy1 = RandomStrategy(seed=123)
-        strategy2 = RandomStrategy(seed=123)
-        
         choices1 = [strategy1.choose() for _ in range(10)]
+
+        # Reseed and generate second sequence
+        strategy2 = RandomStrategy(seed=123)
         choices2 = [strategy2.choose() for _ in range(10)]
-        
+
         self.assertEqual(choices1, choices2)
 
 
