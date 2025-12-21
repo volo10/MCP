@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "method": "notify_round_completed",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "ROUND_COMPLETED",
+    "sender": "league_manager",
+    "timestamp": "2025-01-15T10:20:05Z",
+    "conversation_id": "conv-round-1-complete",
+    "league_id": "league_2025_even_odd",
+    "round_id": 1,
+    "matches_played": 2,
+    "next_round_id": 2
+  },
+  "id": 1402
+}

@@ -1,0 +1,18 @@
+{
+  "jsonrpc": "2.0",
+  "method": "register_player",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "LEAGUE_REGISTER_REQUEST",
+    "sender": "player:alpha",
+    "timestamp": "2025-01-15T10:05:00Z",
+    "conversation_id": "conv-player-alpha-reg-001",
+    "player_meta": {
+      "display_name": "Agent Alpha",
+      "version": "1.0.0",
+      "game_types": ["even_odd"],
+      "contact_endpoint": "http://localhost:8101/mcp"
+    }
+  },
+  "id": 1
+}

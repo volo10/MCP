@@ -70,6 +70,15 @@ class JsonLogger:
         """
         Write a log entry.
         
+        Format follows Chapter 9.5.1 of the League Protocol specification:
+        {
+            "timestamp": "2025-01-15T10:15:00Z",
+            "component": "league_manager",
+            "event_type": "ROUND_ANNOUNCEMENT_SENT",
+            "level": "INFO",
+            "details": { ... }
+        }
+        
         Args:
             event_type: The type of event being logged.
             level: Log level (DEBUG, INFO, WARNING, ERROR).
@@ -86,8 +95,9 @@ class JsonLogger:
         if self.league_id:
             entry["league_id"] = self.league_id
         
-        # Add additional details
-        entry.update(details)
+        # Add additional details in a 'details' object per Ch. 9.5.1
+        if details:
+            entry["details"] = details
         
         # Write to log file
         with self.log_file.open("a", encoding="utf-8") as f:

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "system_id": "league_system_prod",
+  "protocol_version": "league.v2",
+  "timeouts": {
+    "move_timeout_sec": 30,
+    "generic_response_timeout_sec": 10
+  },
+  "retry_policy": {
+    "max_retries": 3,
+    "backoff_strategy": "exponential"
+  }
+}
+

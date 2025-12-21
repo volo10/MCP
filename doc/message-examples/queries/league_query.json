@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "method": "league_query",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "LEAGUE_QUERY",
+    "sender": "player:P01",
+    "timestamp": "2025-01-15T10:25:00Z",
+    "conversation_id": "conv-query-standings-001",
+    "auth_token": "tok-p01-xyz789",
+    "league_id": "league_2025_even_odd",
+    "query_type": "GET_STANDINGS"
+  },
+  "id": 1501
+}
+

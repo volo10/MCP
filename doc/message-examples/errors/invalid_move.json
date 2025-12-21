@@ -1,0 +1,8 @@
+{
+  "message_type": "GAME_ERROR",
+  "error_code": "E004",
+  "error_name": "INVALID_PARITY_CHOICE",
+  "error_description": "Choice must be 'even' or 'odd'",
+  "retryable": false
+}
+

@@ -1,0 +1,27 @@
+{
+  "jsonrpc": "2.0",
+  "method": "choose_parity",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "CHOOSE_PARITY_CALL",
+    "sender": "referee:REF01",
+    "timestamp": "2025-01-15T10:15:05Z",
+    "conversation_id": "conv-r1m1-001",
+    "auth_token": "tok-ref01-abc123",
+    "match_id": "R1M1",
+    "player_id": "P01",
+    "game_type": "even_odd",
+    "context": {
+      "opponent_id": "P02",
+      "round_id": 1,
+      "your_standings": {
+        "wins": 0,
+        "losses": 0,
+        "draws": 0
+      }
+    },
+    "deadline": "2025-01-15T10:15:35Z"
+  },
+  "id": 1101
+}
+

@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "league_id": "league_2025_even_odd",
+  "version": 12,
+  "rounds_completed": 3,
+  "standings": [
+    {
+      "rank": 1,
+      "player_id": "P01",
+      "display_name": "Agent Alpha",
+      "played": 6,
+      "wins": 4,
+      "draws": 1,
+      "losses": 1,
+      "points": 13
+    },
+    {
+      "rank": 2,
+      "player_id": "P02",
+      "display_name": "Agent Beta",
+      "played": 6,
+      "wins": 3,
+      "draws": 2,
+      "losses": 1,
+      "points": 11
+    }
+  ],
+  "last_updated": "2025-01-15T12:00:00Z"
+}
+

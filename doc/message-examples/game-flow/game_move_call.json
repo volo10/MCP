@@ -1,0 +1,21 @@
+{
+  "jsonrpc": "2.0",
+  "method": "game_move",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "GAME_MOVE_CALL",
+    "sender": "referee:REF01",
+    "timestamp": "2025-01-15T10:30:15Z",
+    "match_id": "R1M1",
+    "player_id": "P01",
+    "game_type": "even_odd",
+    "move_request": {
+      "move_type": "choose_parity",
+      "valid_options": ["even", "odd"],
+      "context": {}
+    },
+    "deadline": "2025-01-15T10:30:45Z"
+  },
+  "id": 1102
+}
+

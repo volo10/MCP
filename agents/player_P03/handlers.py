@@ -83,11 +83,11 @@ class PlayerHandlers:
         # Always accept (auto_accept_invitations)
         response = self._create_envelope(
             "GAME_JOIN_ACK",
+            conversation_id=conversation_id,
             match_id=match_id,
             player_id=self.state.player_id,
             arrival_timestamp=datetime.utcnow().isoformat() + "Z",
-            accept=True,
-            accepted=True  # Include both for compatibility
+            accept=True
         )
         
         self.state.logger.debug("GAME_JOIN_ACK_SENT", match_id=match_id)
@@ -115,6 +115,7 @@ class PlayerHandlers:
         game_type = params.get("game_type")
         context = params.get("context", {})
         deadline = params.get("deadline")
+        conversation_id = params.get("conversation_id")
         
         self.state.logger.debug("CHOOSE_PARITY_CALL_RECEIVED",
                                 match_id=match_id)
@@ -148,10 +149,10 @@ class PlayerHandlers:
         
         response = self._create_envelope(
             "CHOOSE_PARITY_RESPONSE",
+            conversation_id=conversation_id,
             match_id=match_id,
             player_id=self.state.player_id,
-            parity_choice=choice,
-            choice=choice  # Include both for compatibility
+            parity_choice=choice
         )
         
         return response
@@ -266,19 +267,13 @@ class PlayerHandlers:
             return await self._handle_round_announcement(params)
         
         elif message_type == "LEAGUE_STANDINGS_UPDATE":
-            return await self._handle_standings_update(params)
+            return await self.handle_standings_update(params)
         
         elif message_type == "ROUND_COMPLETED":
-            round_id = params.get("round_id")
-            self.state.logger.info("ROUND_COMPLETED_NOTIFICATION",
-                                   round_id=round_id)
-            return {"status": "acknowledged", "round_id": round_id}
+            return await self.handle_round_completed(params)
         
         elif message_type == "LEAGUE_COMPLETED":
-            champion = params.get("champion", {})
-            self.state.logger.info("LEAGUE_COMPLETED_NOTIFICATION",
-                                   champion=champion.get("player_id"))
-            return {"status": "acknowledged", "message_type": message_type}
+            return await self.handle_league_completed(params)
         
         else:
             self.state.logger.debug("NOTIFICATION_IGNORED",
@@ -307,7 +302,7 @@ class PlayerHandlers:
             "matches_count": len(my_matches)
         }
     
-    async def _handle_standings_update(self, params: dict) -> dict:
+    async def handle_standings_update(self, params: dict) -> dict:
         """Handle LEAGUE_STANDINGS_UPDATE."""
         round_id = params.get("round_id")
         standings = params.get("standings", [])
@@ -323,12 +318,69 @@ class PlayerHandlers:
             self.state.logger.info("STANDINGS_UPDATE_RECEIVED",
                                    round_id=round_id,
                                    rank=my_standing.get("rank"),
-                                   points=my_standing.get("points"))
+                                   points=my_standing.get("points"),
+                                   played=my_standing.get("played"),
+                                   wins=my_standing.get("wins"),
+                                   draws=my_standing.get("draws"),
+                                   losses=my_standing.get("losses"))
         
         return {
             "status": "acknowledged",
+            "message_type": "LEAGUE_STANDINGS_UPDATE",
             "round_id": round_id,
             "my_rank": my_standing.get("rank") if my_standing else None
+        }
+    
+    async def handle_round_completed(self, params: dict) -> dict:
+        """Handle ROUND_COMPLETED notification."""
+        round_id = params.get("round_id")
+        matches_played = params.get("matches_played")
+        next_round_id = params.get("next_round_id")
+        
+        self.state.logger.info("ROUND_COMPLETED_RECEIVED",
+                               round_id=round_id,
+                               matches_played=matches_played,
+                               next_round_id=next_round_id)
+        
+        return {
+            "status": "acknowledged",
+            "message_type": "ROUND_COMPLETED",
+            "round_id": round_id,
+            "next_round_id": next_round_id
+        }
+    
+    async def handle_league_completed(self, params: dict) -> dict:
+        """Handle LEAGUE_COMPLETED notification."""
+        champion = params.get("champion", {})
+        total_rounds = params.get("total_rounds")
+        total_matches = params.get("total_matches")
+        final_standings = params.get("final_standings", [])
+        
+        # Find my final position
+        my_standing = None
+        for standing in final_standings:
+            if standing.get("player_id") == self.state.player_id:
+                my_standing = standing
+                break
+        
+        # Check if I am the champion
+        am_champion = (champion.get("player_id") == self.state.player_id)
+        
+        self.state.logger.info("LEAGUE_COMPLETED_RECEIVED",
+                               champion_id=champion.get("player_id"),
+                               champion_name=champion.get("display_name"),
+                               champion_points=champion.get("points"),
+                               total_rounds=total_rounds,
+                               total_matches=total_matches,
+                               my_final_rank=my_standing.get("rank") if my_standing else None,
+                               my_final_points=my_standing.get("points") if my_standing else None,
+                               am_champion=am_champion)
+        
+        return {
+            "status": "acknowledged",
+            "message_type": "LEAGUE_COMPLETED",
+            "am_champion": am_champion,
+            "my_final_rank": my_standing.get("rank") if my_standing else None
         }
     
     # =========================================================================

@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "player_id": "P01",
+  "stats": {
+    "total_matches": 20,
+    "wins": 12,
+    "losses": 5,
+    "draws": 3
+  },
+  "matches": [
+    {
+      "match_id": "R1M1",
+      "league_id": "league_2025_even_odd",
+      "opponent_id": "P02",
+      "result": "WIN",
+      "timestamp": "2025-01-15T10:15:30Z",
+      "my_choice": "even",
+      "opponent_choice": "odd",
+      "details": {
+        "drawn_number": 8,
+        "number_parity": "even",
+        "reason": "P01 chose even, number was 8 (even)"
+      }
+    },
+    {
+      "match_id": "R2M1",
+      "league_id": "league_2025_even_odd",
+      "opponent_id": "P03",
+      "result": "DRAW",
+      "timestamp": "2025-01-15T11:15:30Z",
+      "my_choice": "odd",
+      "opponent_choice": "odd",
+      "details": {
+        "drawn_number": 7,
+        "number_parity": "odd",
+        "reason": "Both chose correctly (odd), number was 7"
+      }
+    }
+  ],
+  "last_updated": "2025-01-15T12:00:00Z"
+}
+

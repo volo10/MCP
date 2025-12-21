@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-01-15T10:15:00Z",
+  "component": "league_manager",
+  "event_type": "ROUND_ANNOUNCEMENT_SENT",
+  "level": "INFO",
+  "league_id": "league_2025_even_odd",
+  "details": {
+    "round_id": 1,
+    "matches_count": 2
+  }
+}
+

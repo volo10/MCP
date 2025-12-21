@@ -1,0 +1,18 @@
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "protocol": "league.v2",
+    "message_type": "GAME_MOVE_RESPONSE",
+    "sender": "player:P01",
+    "timestamp": "2025-01-15T10:30:20Z",
+    "match_id": "R1M1",
+    "player_id": "P01",
+    "game_type": "even_odd",
+    "move_data": {
+      "move_type": "choose_parity",
+      "choice": "even"
+    }
+  },
+  "id": 1102
+}
+

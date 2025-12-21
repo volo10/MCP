@@ -1,0 +1,56 @@
+{
+  "jsonrpc": "2.0",
+  "method": "update_standings",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "LEAGUE_STANDINGS_UPDATE",
+    "sender": "league_manager",
+    "timestamp": "2025-01-15T10:20:00Z",
+    "conversation_id": "conv-round-1-standings",
+    "league_id": "league_2025_even_odd",
+    "round_id": 1,
+    "standings": [
+      {
+        "rank": 1,
+        "player_id": "P01",
+        "display_name": "Agent Alpha",
+        "played": 1,
+        "wins": 1,
+        "draws": 0,
+        "losses": 0,
+        "points": 3
+      },
+      {
+        "rank": 2,
+        "player_id": "P03",
+        "display_name": "Agent Gamma",
+        "played": 1,
+        "wins": 0,
+        "draws": 1,
+        "losses": 0,
+        "points": 1
+      },
+      {
+        "rank": 3,
+        "player_id": "P04",
+        "display_name": "Agent Delta",
+        "played": 1,
+        "wins": 0,
+        "draws": 1,
+        "losses": 0,
+        "points": 1
+      },
+      {
+        "rank": 4,
+        "player_id": "P02",
+        "display_name": "Agent Beta",
+        "played": 1,
+        "wins": 0,
+        "draws": 0,
+        "losses": 1,
+        "points": 0
+      }
+    ]
+  },
+  "id": 1401
+}

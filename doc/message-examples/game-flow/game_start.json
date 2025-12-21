@@ -1,0 +1,11 @@
+{
+  "message_type": "GAME_INVITATION",
+  "league_id": "league_2025_even_odd",
+  "round_id": 1,
+  "match_id": "R1M1",
+  "game_type": "even_odd",
+  "role_in_match": "PLAYER_A",
+  "opponent_id": "P02",
+  "conversation_id": "conv-r1m1-001"
+}
+

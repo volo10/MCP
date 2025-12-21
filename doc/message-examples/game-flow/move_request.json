@@ -1,0 +1,12 @@
+{
+  "message_type": "CHOOSE_PARITY_CALL",
+  "match_id": "R1M1",
+  "player_id": "P01",
+  "game_type": "even_odd",
+  "context": {
+    "opponent_id": "P02",
+    "round_id": 1
+  },
+  "deadline": "2025-01-15T10:30:30Z"
+}
+

@@ -1,0 +1,20 @@
+{
+  "jsonrpc": "2.0",
+  "method": "handle_game_invitation",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "GAME_INVITATION",
+    "sender": "referee:REF01",
+    "timestamp": "2025-01-15T10:15:00Z",
+    "conversation_id": "conv-r1m1-001",
+    "auth_token": "tok-ref01-abc123",
+    "league_id": "league_2025_even_odd",
+    "round_id": 1,
+    "match_id": "R1M1",
+    "game_type": "even_odd",
+    "role_in_match": "PLAYER_A",
+    "opponent_id": "P02"
+  },
+  "id": 1001
+}
+

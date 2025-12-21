@@ -75,6 +75,9 @@ class LeagueHandlers:
         version = referee_meta.get("version", "1.0.0")
         max_concurrent = referee_meta.get("max_concurrent_matches", 2)
         
+        # Get conversation_id from request
+        conversation_id = params.get("conversation_id", f"conv-ref-{display_name.lower().replace(' ', '-')}-reg")
+        
         # Check if referee is already registered by endpoint
         for ref_id, ref_data in self.state.registered_referees.items():
             if ref_data["endpoint"] == contact_endpoint:
@@ -84,6 +87,7 @@ class LeagueHandlers:
                                        display_name=display_name)
                 return self._create_envelope(
                     "REFEREE_REGISTER_RESPONSE",
+                    conversation_id=conversation_id,
                     status="ACCEPTED",
                     referee_id=ref_id,
                     auth_token=ref_data["auth_token"],
@@ -117,6 +121,7 @@ class LeagueHandlers:
         
         return self._create_envelope(
             "REFEREE_REGISTER_RESPONSE",
+            conversation_id=conversation_id,
             status="ACCEPTED",
             referee_id=referee_id,
             auth_token=auth_token,
@@ -151,6 +156,9 @@ class LeagueHandlers:
         game_types = player_meta.get("game_types", [])
         version = player_meta.get("version", "1.0.0")
         
+        # Get conversation_id from request
+        conversation_id = params.get("conversation_id", f"conv-player-{display_name.lower().replace(' ', '-')}-reg")
+        
         # Check if player is already registered by endpoint
         for player_id, player_data in self.state.registered_players.items():
             if player_data["endpoint"] == contact_endpoint:
@@ -160,6 +168,7 @@ class LeagueHandlers:
                                        display_name=display_name)
                 return self._create_envelope(
                     "LEAGUE_REGISTER_RESPONSE",
+                    conversation_id=conversation_id,
                     status="ACCEPTED",
                     player_id=player_id,
                     auth_token=player_data["auth_token"],
@@ -185,20 +194,8 @@ class LeagueHandlers:
             "active": True
         }
         
-        # Initialize player in standings
-        self.state.standings_repo.update_player(
-            player_id=player_id,
-            display_name=display_name,
-            result="",  # No result yet, just initializing
-            points=0
-        )
-        # Undo the played increment since this is just initialization
-        standings = self.state.standings_repo.load()
-        for entry in standings.get("standings", []):
-            if entry["player_id"] == player_id:
-                entry["played"] = 0
-                break
-        self.state.standings_repo.save(standings)
+        # Note: Standings are initialized when the league starts (handle_start_league)
+        # This ensures a clean slate for each league run
         
         self.state.logger.info("PLAYER_REGISTERED",
                                player_id=player_id,
@@ -207,6 +204,7 @@ class LeagueHandlers:
         
         return self._create_envelope(
             "LEAGUE_REGISTER_RESPONSE",
+            conversation_id=conversation_id,
             status="ACCEPTED",
             player_id=player_id,
             auth_token=auth_token,
@@ -283,8 +281,15 @@ class LeagueHandlers:
                                    round_id=self.state.current_round,
                                    matches_completed=self.state.matches_completed_this_round)
             
+            # Broadcast ROUND_COMPLETED message
+            await self._broadcast_round_completed()
+            
             # Broadcast standings update
             await self._broadcast_standings_update()
+            
+            # Check if league is complete (all rounds played)
+            if self.state.current_round >= len(self.state.schedule):
+                await self._broadcast_league_completed()
         
         return self._create_envelope(
             "MATCH_RESULT_ACK",
@@ -309,6 +314,27 @@ class LeagueHandlers:
         
         if len(player_ids) < 2:
             raise ValueError("Need at least 2 players to start league")
+        
+        # Reset standings for fresh start
+        self.state.standings_repo.reset()
+        self.state.logger.info("STANDINGS_RESET", league_id=self.state.league_id)
+        
+        # Re-initialize all players in standings with 0 stats
+        for player_id, player_data in self.state.registered_players.items():
+            standings = self.state.standings_repo.load()
+            standings_list = standings.get("standings", [])
+            standings_list.append({
+                "player_id": player_id,
+                "display_name": player_data["display_name"],
+                "played": 0,
+                "wins": 0,
+                "draws": 0,
+                "losses": 0,
+                "points": 0,
+                "rank": len(standings_list) + 1
+            })
+            standings["standings"] = standings_list
+            self.state.standings_repo.save(standings)
         
         # Create Round-Robin schedule
         self.state.schedule = self.state.scheduler.create_schedule(player_ids)
@@ -358,19 +384,19 @@ class LeagueHandlers:
         
         round_matches = self.state.schedule[round_idx]
         
-        # Select a referee for this round
+        # Select referees for this round
         referee_ids = list(self.state.registered_referees.keys())
         if not referee_ids:
             raise ValueError("No referees registered")
         
-        # Simple round-robin referee assignment
-        referee_id = referee_ids[round_idx % len(referee_ids)]
-        referee_endpoint = self.state.registered_referees[referee_id]["endpoint"]
-        
-        # Build match list for announcement
+        # Build match list for announcement - distribute matches across referees
+        # Each referee gets 1 match per round (round-robin assignment)
         matches = []
         for i, (player_a, player_b) in enumerate(round_matches):
             match_id = f"R{self.state.current_round}M{i + 1}"
+            # Assign each match to a different referee (cycling through available referees)
+            referee_id = referee_ids[i % len(referee_ids)]
+            referee_endpoint = self.state.registered_referees[referee_id]["endpoint"]
             matches.append({
                 "match_id": match_id,
                 "game_type": self.state.league_config.game_type,
@@ -395,8 +421,13 @@ class LeagueHandlers:
         # Send to all players
         notification_results = await self._broadcast_to_players(announcement)
         
-        # Also notify the referee
-        await self._notify_referee(referee_id, announcement)
+        # Notify all referees who have matches in this round
+        notified_referees = set()
+        for match in matches:
+            ref_id = match["referee_id"]
+            if ref_id not in notified_referees:
+                await self._notify_referee(ref_id, announcement)
+                notified_referees.add(ref_id)
         
         return self._create_envelope(
             "ROUND_ANNOUNCEMENT_COMPLETE",
@@ -456,6 +487,28 @@ class LeagueHandlers:
                 ]
             )
         
+        elif query_type == "GET_STATUS":
+            total_rounds = len(self.state.schedule) if self.state.schedule else 0
+            is_complete = self.state.current_round >= total_rounds and total_rounds > 0
+            
+            standings = self.state.standings_repo.load()
+            standings_list = standings.get("standings", [])
+            champion = None
+            if is_complete and standings_list:
+                champion = max(standings_list, key=lambda x: x.get("points", 0))
+            
+            return self._create_envelope(
+                "LEAGUE_STATUS",
+                current_round=self.state.current_round,
+                total_rounds=total_rounds,
+                is_complete=is_complete,
+                champion={
+                    "player_id": champion.get("player_id"),
+                    "display_name": champion.get("display_name"),
+                    "points": champion.get("points", 0)
+                } if champion else None
+            )
+        
         else:
             raise ValueError(f"Unknown query_type: {query_type}")
     
@@ -463,7 +516,7 @@ class LeagueHandlers:
     # Communication Helpers
     # =========================================================================
     
-    async def _broadcast_to_players(self, message: dict) -> list:
+    async def _broadcast_to_players(self, message: dict, method: str = "notify_round") -> list:
         """Broadcast a message to all registered players."""
         results = []
         
@@ -476,9 +529,9 @@ class LeagueHandlers:
                 try:
                     payload = {
                         "jsonrpc": "2.0",
-                        "method": "notify",
+                        "method": method,
                         "params": message,
-                        "id": None  # Notification, no response expected
+                        "id": 10  # Round announcement ID
                     }
                     
                     response = await client.post(endpoint, json=payload)
@@ -504,7 +557,7 @@ class LeagueHandlers:
         
         return results
     
-    async def _notify_referee(self, referee_id: str, message: dict) -> bool:
+    async def _notify_referee(self, referee_id: str, message: dict, method: str = "notify_round") -> bool:
         """Send a notification to a specific referee."""
         if referee_id not in self.state.registered_referees:
             return False
@@ -516,14 +569,96 @@ class LeagueHandlers:
             try:
                 payload = {
                     "jsonrpc": "2.0",
-                    "method": "notify",
+                    "method": method,
                     "params": message,
-                    "id": None
+                    "id": 10
                 }
                 await client.post(endpoint, json=payload)
                 return True
             except Exception as e:
                 self.state.logger.warning("REFEREE_NOTIFY_FAILED",
+                                          referee_id=referee_id,
+                                          error=str(e))
+                return False
+    
+    async def _broadcast_round_completed(self) -> None:
+        """Broadcast ROUND_COMPLETED message to all players and referees."""
+        # Calculate next round
+        next_round_id = self.state.current_round + 1 if self.state.current_round < len(self.state.schedule) else None
+        
+        message = self._create_envelope(
+            "ROUND_COMPLETED",
+            conversation_id=f"conv-round-{self.state.current_round}-complete",
+            round_id=self.state.current_round,
+            matches_played=self.state.matches_completed_this_round,
+            next_round_id=next_round_id
+        )
+        
+        # Send to all players using notify_round_completed method
+        await self._broadcast_round_completed_to_players(message)
+        
+        # Also notify all referees
+        for referee_id in self.state.registered_referees.keys():
+            await self._notify_referee_round_completed(referee_id, message)
+        
+        self.state.logger.info("ROUND_COMPLETED_BROADCAST",
+                               round_id=self.state.current_round,
+                               next_round_id=next_round_id)
+    
+    async def _broadcast_round_completed_to_players(self, message: dict) -> list:
+        """Broadcast ROUND_COMPLETED using notify_round_completed method."""
+        results = []
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for player_id, player_data in self.state.registered_players.items():
+                if not player_data["active"]:
+                    continue
+                
+                endpoint = player_data["endpoint"]
+                try:
+                    payload = {
+                        "jsonrpc": "2.0",
+                        "method": "notify_round_completed",
+                        "params": message,
+                        "id": 1402
+                    }
+                    
+                    response = await client.post(endpoint, json=payload)
+                    results.append({
+                        "player_id": player_id,
+                        "status": "sent",
+                        "status_code": response.status_code
+                    })
+                    
+                except Exception as e:
+                    results.append({
+                        "player_id": player_id,
+                        "status": "failed",
+                        "error": str(e)
+                    })
+        
+        return results
+    
+    async def _notify_referee_round_completed(self, referee_id: str, message: dict) -> bool:
+        """Send ROUND_COMPLETED to a specific referee."""
+        if referee_id not in self.state.registered_referees:
+            return False
+        
+        referee_data = self.state.registered_referees[referee_id]
+        endpoint = referee_data["endpoint"]
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                payload = {
+                    "jsonrpc": "2.0",
+                    "method": "notify_round_completed",
+                    "params": message,
+                    "id": 1402
+                }
+                await client.post(endpoint, json=payload)
+                return True
+            except Exception as e:
+                self.state.logger.warning("REFEREE_ROUND_COMPLETED_FAILED",
                                           referee_id=referee_id,
                                           error=str(e))
                 return False
@@ -534,12 +669,154 @@ class LeagueHandlers:
         
         message = self._create_envelope(
             "LEAGUE_STANDINGS_UPDATE",
+            conversation_id=f"conv-round-{self.state.current_round}-standings",
             round_id=self.state.current_round,
             standings=standings.get("standings", [])
         )
         
-        await self._broadcast_to_players(message)
+        # Send using update_standings method
+        await self._broadcast_standings_to_players(message)
         
         self.state.logger.info("STANDINGS_UPDATE_BROADCAST",
                                round_id=self.state.current_round)
+    
+    async def _broadcast_standings_to_players(self, message: dict) -> list:
+        """Broadcast standings using update_standings method."""
+        results = []
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for player_id, player_data in self.state.registered_players.items():
+                if not player_data["active"]:
+                    continue
+                
+                endpoint = player_data["endpoint"]
+                try:
+                    payload = {
+                        "jsonrpc": "2.0",
+                        "method": "update_standings",
+                        "params": message,
+                        "id": 1401
+                    }
+                    
+                    response = await client.post(endpoint, json=payload)
+                    results.append({
+                        "player_id": player_id,
+                        "status": "sent",
+                        "status_code": response.status_code
+                    })
+                    
+                except Exception as e:
+                    results.append({
+                        "player_id": player_id,
+                        "status": "failed",
+                        "error": str(e)
+                    })
+        
+        return results
+    
+    async def _broadcast_league_completed(self) -> None:
+        """Broadcast LEAGUE_COMPLETED message to all players and referees."""
+        standings = self.state.standings_repo.load()
+        standings_list = standings.get("standings", [])
+        
+        # Determine champion (player with most points)
+        champion = None
+        if standings_list:
+            champion = max(standings_list, key=lambda x: x.get("points", 0))
+        
+        message = self._create_envelope(
+            "LEAGUE_COMPLETED",
+            conversation_id="conv-league-complete",
+            total_rounds=len(self.state.schedule),
+            total_matches=sum(len(r) for r in self.state.schedule),
+            champion={
+                "player_id": champion.get("player_id") if champion else None,
+                "display_name": champion.get("display_name") if champion else None,
+                "points": champion.get("points", 0) if champion else 0
+            } if champion else None,
+            final_standings=[
+                {
+                    "rank": entry.get("rank"),
+                    "player_id": entry.get("player_id"),
+                    "display_name": entry.get("display_name"),
+                    "points": entry.get("points", 0)
+                }
+                for entry in standings_list
+            ]
+        )
+        
+        # Send to all players using notify_league_completed method
+        await self._broadcast_league_completed_to_players(message)
+        
+        # Also notify all referees
+        for referee_id in self.state.registered_referees.keys():
+            await self._notify_referee_league_completed(referee_id, message)
+        
+        self.state.logger.info("LEAGUE_COMPLETED_BROADCAST",
+                               champion=champion.get("player_id") if champion else None,
+                               total_rounds=len(self.state.schedule))
+    
+    async def _broadcast_league_completed_to_players(self, message: dict) -> list:
+        """Broadcast LEAGUE_COMPLETED using notify_league_completed method."""
+        results = []
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for player_id, player_data in self.state.registered_players.items():
+                if not player_data["active"]:
+                    continue
+                
+                endpoint = player_data["endpoint"]
+                try:
+                    payload = {
+                        "jsonrpc": "2.0",
+                        "method": "notify_league_completed",
+                        "params": message,
+                        "id": 2001
+                    }
+                    
+                    response = await client.post(endpoint, json=payload)
+                    results.append({
+                        "player_id": player_id,
+                        "status": "sent",
+                        "status_code": response.status_code
+                    })
+                    
+                    self.state.logger.debug("LEAGUE_COMPLETED_SENT",
+                                            recipient=player_id)
+                    
+                except Exception as e:
+                    results.append({
+                        "player_id": player_id,
+                        "status": "failed",
+                        "error": str(e)
+                    })
+                    self.state.logger.warning("LEAGUE_COMPLETED_SEND_FAILED",
+                                              recipient=player_id,
+                                              error=str(e))
+        
+        return results
+    
+    async def _notify_referee_league_completed(self, referee_id: str, message: dict) -> bool:
+        """Send LEAGUE_COMPLETED to a specific referee."""
+        if referee_id not in self.state.registered_referees:
+            return False
+        
+        referee_data = self.state.registered_referees[referee_id]
+        endpoint = referee_data["endpoint"]
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                payload = {
+                    "jsonrpc": "2.0",
+                    "method": "notify_league_completed",
+                    "params": message,
+                    "id": 2001
+                }
+                await client.post(endpoint, json=payload)
+                return True
+            except Exception as e:
+                self.state.logger.warning("REFEREE_LEAGUE_COMPLETED_FAILED",
+                                          referee_id=referee_id,
+                                          error=str(e))
+                return False
 

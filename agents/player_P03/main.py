@@ -88,12 +88,16 @@ async def register_with_league_manager():
     state.logger.info("REGISTRATION_STARTING",
                       league_manager=state.league_manager_endpoint)
     
+    conversation_id = f"conv-player-{state.display_name.lower().replace(' ', '-')}-reg-001"
     request_payload = {
         "jsonrpc": "2.0",
         "method": "register_player",
         "params": {
             "protocol": "league.v2",
             "message_type": "LEAGUE_REGISTER_REQUEST",
+            "sender": f"player:{state.display_name.lower().replace(' ', '_')}",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "conversation_id": conversation_id,
             "player_meta": {
                 "display_name": state.display_name,
                 "version": "1.0.0",
@@ -241,14 +245,27 @@ async def mcp_endpoint(request: Request):
     state.logger.debug("REQUEST_RECEIVED", method=method)
     
     try:
-        if method == "game_invitation":
+        if method == "handle_game_invitation" or method == "game_invitation":
+            # GAME_INVITATION (Ch. 8.7.1)
             result = await handlers.handle_game_invitation(params)
         elif method == "choose_parity":
+            # CHOOSE_PARITY_CALL (Ch. 8.7.3)
             result = await handlers.handle_choose_parity(params)
-        elif method == "notify_game_over":
+        elif method == "notify_match_result" or method == "notify_game_over":
+            # GAME_OVER (Ch. 8.7.5)
             result = await handlers.handle_game_over(params)
-        elif method == "notify":
+        elif method == "notify" or method == "notify_round":
+            # ROUND_ANNOUNCEMENT and general notifications (Ch. 8.6)
             result = await handlers.handle_notification(params)
+        elif method == "notify_league_completed":
+            # LEAGUE_COMPLETED (Ch. 8.9)
+            result = await handlers.handle_league_completed(params)
+        elif method == "notify_round_completed":
+            # ROUND_COMPLETED (Ch. 8.8)
+            result = await handlers.handle_round_completed(params)
+        elif method == "update_standings":
+            # LEAGUE_STANDINGS_UPDATE (Ch. 8.8)
+            result = await handlers.handle_standings_update(params)
         elif method == "get_stats":
             result = await handlers.get_stats()
         elif method == "get_history":

@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "protocol": "league.v2",
+    "message_type": "CHOOSE_PARITY_RESPONSE",
+    "sender": "player:P01",
+    "timestamp": "2025-01-15T10:15:10Z",
+    "conversation_id": "conv-r1m1-001",
+    "auth_token": "tok-p01-xyz789",
+    "match_id": "R1M1",
+    "player_id": "P01",
+    "parity_choice": "even"
+  },
+  "id": 1101
+}
+

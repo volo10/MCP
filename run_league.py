@@ -392,8 +392,75 @@ class LeagueRunner:
                             round_id = result["result"].get("round_id", "?")
                             matches = result["result"].get("matches", [])
                             self.log(f"Round {round_id} announced with {len(matches)} matches")
+                            
+                            # Wait a moment for matches to complete, then check standings
+                            import time
+                            time.sleep(1.5)  # Give matches time to complete
+                            
+                            # Check if league is complete by querying status
+                            status_response = httpx.post(
+                                "http://localhost:8000/mcp",
+                                json={
+                                    "jsonrpc": "2.0",
+                                    "method": "league_query",
+                                    "params": {"query_type": "GET_STATUS"},
+                                    "id": 3
+                                },
+                                timeout=5.0
+                            )
+                            status_result = status_response.json()
+                            if "result" in status_result:
+                                league_status = status_result["result"]
+                                current_round = league_status.get("current_round", 0)
+                                total_rounds = league_status.get("total_rounds", 0)
+                                
+                                if current_round >= total_rounds and total_rounds > 0:
+                                    print()
+                                    print("=" * 60)
+                                    print("🏆  LEAGUE COMPLETED!  🏆")
+                                    print("=" * 60)
+                                    # Get final standings
+                                    standings_resp = httpx.get("http://localhost:8000/standings", timeout=5.0)
+                                    standings = standings_resp.json()
+                                    standings_list = standings.get("standings", [])
+                                    if standings_list:
+                                        champion = standings_list[0]
+                                        print(f"\n🥇 CHAMPION: {champion.get('player_id')} - {champion.get('display_name', '')}")
+                                        print(f"   Points: {champion.get('points', 0)}")
+                                        print(f"   Record: W:{champion.get('wins', 0)} D:{champion.get('draws', 0)} L:{champion.get('losses', 0)}")
+                                    print("\nFinal Standings:")
+                                    print("-" * 50)
+                                    for i, entry in enumerate(standings_list):
+                                        medal = ["🥇", "🥈", "🥉", "  "][min(i, 3)]
+                                        print(f"  {medal} #{entry.get('rank', '?')}: {entry.get('player_id', '?')} - "
+                                              f"{entry.get('points', 0)} pts "
+                                              f"(W:{entry.get('wins', 0)} D:{entry.get('draws', 0)} L:{entry.get('losses', 0)})")
+                                    print("-" * 50)
+                                    print("\nType 'stop' to exit or 'start' to begin a new league.")
+                                    print()
                         else:
-                            self.log(f"Error: {result.get('error', 'Unknown error')}")
+                            error_msg = result.get('error', {})
+                            if isinstance(error_msg, dict):
+                                msg = error_msg.get('message', 'Unknown error')
+                            else:
+                                msg = str(error_msg)
+                            
+                            if "No more rounds" in msg:
+                                print()
+                                print("=" * 60)
+                                print("🏆  LEAGUE ALREADY COMPLETED!  🏆")
+                                print("=" * 60)
+                                # Show final standings
+                                standings_resp = httpx.get("http://localhost:8000/standings", timeout=5.0)
+                                standings = standings_resp.json()
+                                standings_list = standings.get("standings", [])
+                                if standings_list:
+                                    champion = standings_list[0]
+                                    print(f"\n🥇 CHAMPION: {champion.get('player_id')} - {champion.get('display_name', '')}")
+                                print("\nType 'start' to begin a new league.")
+                                print()
+                            else:
+                                self.log(f"Error: {msg}")
                     except Exception as e:
                         self.log(f"Error announcing round: {e}")
                 

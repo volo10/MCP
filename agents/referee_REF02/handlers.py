@@ -309,9 +309,9 @@ class RefereeHandlers:
         
         payload = {
             "jsonrpc": "2.0",
-            "method": "game_invitation",
+            "method": "handle_game_invitation",
             "params": invitation,
-            "id": 1
+            "id": 1001
         }
         
         try:
@@ -325,6 +325,13 @@ class RefereeHandlers:
                     "GAME_INVITATION", player_id,
                     match_id=match_id, accepted=accepted
                 )
+                
+                # Log the GAME_JOIN_ACK received from the player
+                if accepted:
+                    self.state.logger.info("GAME_JOIN_ACK_RECEIVED",
+                                           player_id=player_id,
+                                           match_id=match_id,
+                                           arrival_timestamp=result.get("arrival_timestamp"))
                 
                 return {"accepted": accepted}
             else:
@@ -533,9 +540,9 @@ class RefereeHandlers:
                 
                 payload = {
                     "jsonrpc": "2.0",
-                    "method": "notify_game_over",
+                    "method": "notify_match_result",
                     "params": game_over,
-                    "id": None
+                    "id": 1201
                 }
                 
                 try:
@@ -577,7 +584,7 @@ class RefereeHandlers:
             "jsonrpc": "2.0",
             "method": "report_match_result",
             "params": report,
-            "id": 100
+            "id": 1301
         }
         
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -617,4 +624,44 @@ class RefereeHandlers:
             return match_data
         
         raise ValueError(f"Match not found: {match_id}")
+    
+    # =========================================================================
+    # League Completed Handler
+    # =========================================================================
+    
+    async def handle_round_completed(self, params: dict) -> dict:
+        """Handle ROUND_COMPLETED notification from League Manager."""
+        round_id = params.get("round_id")
+        matches_played = params.get("matches_played")
+        next_round_id = params.get("next_round_id")
+        
+        self.state.logger.info("ROUND_COMPLETED_RECEIVED",
+                               round_id=round_id,
+                               matches_played=matches_played,
+                               next_round_id=next_round_id)
+        
+        return {
+            "status": "acknowledged",
+            "message_type": "ROUND_COMPLETED",
+            "round_id": round_id
+        }
+    
+    async def handle_league_completed(self, params: dict) -> dict:
+        """Handle LEAGUE_COMPLETED notification from League Manager."""
+        champion = params.get("champion", {})
+        total_rounds = params.get("total_rounds")
+        total_matches = params.get("total_matches")
+        final_standings = params.get("final_standings", [])
+        
+        self.state.logger.info("LEAGUE_COMPLETED_RECEIVED",
+                               champion_id=champion.get("player_id"),
+                               champion_name=champion.get("display_name"),
+                               champion_points=champion.get("points"),
+                               total_rounds=total_rounds,
+                               total_matches=total_matches)
+        
+        return {
+            "status": "acknowledged",
+            "message_type": "LEAGUE_COMPLETED"
+        }
 

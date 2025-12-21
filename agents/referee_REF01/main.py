@@ -85,12 +85,16 @@ async def register_with_league_manager():
     state.logger.info("REGISTRATION_STARTING", 
                       league_manager=state.league_manager_endpoint)
     
+    conversation_id = f"conv-ref-{state.display_name.lower().replace(' ', '-')}-reg-001"
     request_payload = {
         "jsonrpc": "2.0",
         "method": "register_referee",
         "params": {
             "protocol": "league.v2",
             "message_type": "REFEREE_REGISTER_REQUEST",
+            "sender": f"referee:{state.display_name.lower().replace(' ', '_')}",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "conversation_id": conversation_id,
             "referee_meta": {
                 "display_name": state.display_name,
                 "version": "1.0.0",
@@ -229,9 +233,15 @@ async def mcp_endpoint(request: Request):
     state.logger.debug("REQUEST_RECEIVED", method=method)
     
     try:
-        if method == "notify":
+        if method == "notify" or method == "notify_round":
             # Handle notifications (ROUND_ANNOUNCEMENT, etc.)
             result = await handlers.handle_notification(params)
+        elif method == "notify_league_completed":
+            # Handle league completed notification
+            result = await handlers.handle_league_completed(params)
+        elif method == "notify_round_completed":
+            # Handle round completed notification
+            result = await handlers.handle_round_completed(params)
         elif method == "run_match":
             # Manually trigger a match
             result = await handlers.run_match(params)

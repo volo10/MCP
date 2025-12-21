@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-01-15T10:30:00.123Z",
+  "level": "INFO",
+  "agent_id": "player:P01",
+  "message": "Received game invitation",
+  "message_type": "GAME_INVITATION",
+  "conversation_id": "conv-12345",
+  "data": {
+    "match_id": "R1M1",
+    "opponent": "P02"
+  }
+}
+

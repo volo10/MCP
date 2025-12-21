@@ -1,0 +1,26 @@
+{
+  "jsonrpc": "2.0",
+  "method": "notify_match_result",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "GAME_OVER",
+    "sender": "referee:REF01",
+    "timestamp": "2025-01-15T10:15:30Z",
+    "conversation_id": "conv-r1m1-001",
+    "auth_token": "tok-ref01-abc123",
+    "match_id": "R1M1",
+    "game_type": "even_odd",
+    "game_result": {
+      "status": "WIN",
+      "winner_player_id": "P01",
+      "drawn_number": 8,
+      "number_parity": "even",
+      "choices": {
+        "P01": "even",
+        "P02": "odd"
+      },
+      "reason": "P01 chose even, number was 8 (even)"
+    }
+  },
+  "id": 1201
+}

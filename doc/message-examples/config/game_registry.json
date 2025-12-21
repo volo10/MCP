@@ -1,0 +1,23 @@
+{
+  "game_registry": {
+    "even_odd": {
+      "display_name": "Even/Odd",
+      "move_types": ["choose_parity"],
+      "valid_choices": {
+        "choose_parity": ["even", "odd"]
+      },
+      "min_players": 2,
+      "max_players": 2
+    },
+    "tic_tac_toe": {
+      "display_name": "Tic-Tac-Toe",
+      "move_types": ["place_mark"],
+      "valid_choices": {
+        "place_mark": ["0-8"]
+      },
+      "min_players": 2,
+      "max_players": 2
+    }
+  }
+}
+

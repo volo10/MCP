@@ -1,0 +1,26 @@
+{
+  "jsonrpc": "2.0",
+  "method": "notify_league_completed",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "LEAGUE_COMPLETED",
+    "sender": "league_manager",
+    "timestamp": "2025-01-15T12:00:00Z",
+    "conversation_id": "conv-league-complete",
+    "league_id": "league_2025_even_odd",
+    "total_rounds": 3,
+    "total_matches": 6,
+    "champion": {
+      "player_id": "P01",
+      "display_name": "Agent Alpha",
+      "points": 7
+    },
+    "final_standings": [
+      {"rank": 1, "player_id": "P01", "display_name": "Agent Alpha", "points": 7},
+      {"rank": 2, "player_id": "P03", "display_name": "Agent Gamma", "points": 5},
+      {"rank": 3, "player_id": "P04", "display_name": "Agent Delta", "points": 4},
+      {"rank": 4, "player_id": "P02", "display_name": "Agent Beta", "points": 2}
+    ]
+  },
+  "id": 2001
+}

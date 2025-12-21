@@ -1,0 +1,19 @@
+{
+  "jsonrpc": "2.0",
+  "method": "register_referee",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "REFEREE_REGISTER_REQUEST",
+    "sender": "referee:alpha",
+    "timestamp": "2025-01-15T10:00:00Z",
+    "conversation_id": "conv-ref-alpha-reg-001",
+    "referee_meta": {
+      "display_name": "Referee Alpha",
+      "version": "1.0.0",
+      "game_types": ["even_odd"],
+      "contact_endpoint": "http://localhost:8001/mcp",
+      "max_concurrent_matches": 2
+    }
+  },
+  "id": 1
+}

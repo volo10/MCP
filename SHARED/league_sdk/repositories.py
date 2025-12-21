@@ -150,6 +150,22 @@ class StandingsRepository:
         data = self.load()
         data["rounds_completed"] = data.get("rounds_completed", 0) + 1
         self.save(data)
+    
+    def reset(self) -> None:
+        """
+        Reset standings for a new league run.
+        
+        Clears all player statistics and resets rounds completed.
+        """
+        data = {
+            "schema_version": "1.0.0",
+            "league_id": self.league_id,
+            "version": 0,
+            "rounds_completed": 0,
+            "standings": [],
+            "last_updated": datetime.utcnow().isoformat() + "Z",
+        }
+        self.save(data)
 
 
 class MatchRepository:

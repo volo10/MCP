@@ -1,0 +1,15 @@
+{
+  "league_id": "league_2025_even_odd",
+  "game_type": "even_odd",
+  "status": "ACTIVE",
+  "scoring": {
+    "win_points": 3,
+    "draw_points": 1,
+    "loss_points": 0
+  },
+  "participants": {
+    "min_players": 2,
+    "max_players": 10000
+  }
+}
+

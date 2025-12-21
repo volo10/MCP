@@ -1,0 +1,21 @@
+{
+  "jsonrpc": "2.0",
+  "method": "notify_game_error",
+  "params": {
+    "protocol": "league.v2",
+    "message_type": "GAME_ERROR",
+    "sender": "referee:REF01",
+    "timestamp": "2025-01-15T10:16:00Z",
+    "conversation_id": "conv-r1m1-001",
+    "match_id": "R1M1",
+    "error_code": "E001",
+    "error_description": "TIMEOUT_ERROR",
+    "affected_player": "P02",
+    "action_required": "CHOOSE_PARITY_RESPONSE",
+    "retry_count": 0,
+    "max_retries": 3,
+    "consequence": "Technical loss if no response after retries"
+  },
+  "id": 1103
+}
+

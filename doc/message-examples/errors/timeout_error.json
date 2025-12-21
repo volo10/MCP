@@ -1,0 +1,8 @@
+{
+  "message_type": "GAME_ERROR",
+  "error_code": "E001",
+  "error_name": "TIMEOUT_ERROR",
+  "error_description": "Response not received within 30 seconds",
+  "retryable": true
+}
+

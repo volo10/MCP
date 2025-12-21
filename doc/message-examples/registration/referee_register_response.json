@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "protocol": "league.v2",
+    "message_type": "REFEREE_REGISTER_RESPONSE",
+    "sender": "league_manager",
+    "timestamp": "2025-01-15T10:00:01Z",
+    "conversation_id": "conv-ref-alpha-reg-001",
+    "status": "ACCEPTED",
+    "referee_id": "REF01",
+    "auth_token": "tok-ref01-abc123",
+    "league_id": "league_2025_even_odd",
+    "reason": null
+  },
+  "id": 1
+}
+
