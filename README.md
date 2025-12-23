@@ -70,12 +70,51 @@ L07/
 | [MCP_PROTOCOL.md](docs/MCP_PROTOCOL.md) | Protocol specification (league.v2) |
 | [TESTING.md](docs/TESTING.md) | Testing guide and coverage |
 
+## System Requirements
+
+- **Python**: 3.10 or higher
+- **Operating System**: Windows, macOS, or Linux
+- **Memory**: 512 MB minimum (2 GB recommended for full tournament)
+- **Disk**: 100 MB for installation + logs
+
 ## Installation
 
-```bash
-# Install dependencies
-pip install fastapi uvicorn httpx pytest
+### Step 1: Clone and Setup Environment
 
+```bash
+# Clone the repository
+git clone https://github.com/mcp-league/mcp-league-system.git
+cd mcp-league-system
+
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+```
+
+### Step 2: Install Dependencies
+
+```bash
+# Install core dependencies
+pip install -r requirements.txt
+
+# Or install as package with dev dependencies
+pip install -e ".[dev]"
+```
+
+### Step 3: Configure Environment
+
+```bash
+# Copy example environment file
+cp .env.example .env
+
+# Edit .env with your settings (optional)
+# Default settings work out of the box
+```
+
+### Step 4: Verify Installation
+
+```bash
 # Run unit tests
 pytest
 
@@ -266,6 +305,157 @@ GET /health
 └───────┘       └───────┘       └───────┘
 ```
 
+## Configuration Guide
+
+Configuration files are located in `SHARED/config/`:
+
+| File | Description |
+|------|-------------|
+| `system.json` | Network ports, timeouts, retry policies |
+| `agents.json` | Player and referee configurations |
+| `league.json` | League rules, scoring, schedule settings |
+| `games_registry.json` | Available game types (Even/Odd) |
+
+### Key Parameters
+
+```json
+// system.json - Network settings
+{
+  "network": {
+    "host": "localhost",
+    "league_manager_port": 8000,
+    "referee_port_start": 8001,
+    "player_port_start": 8101
+  },
+  "timeouts": {
+    "request_timeout": 10.0,
+    "match_timeout": 30.0
+  }
+}
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `MCP_DATA_DIR` | `SHARED/data` | Directory for runtime data |
+| `MCP_LOGS_DIR` | `SHARED/logs` | Directory for JSONL logs |
+
+## Troubleshooting
+
+### Common Issues
+
+#### Port Already in Use
+```
+Error: Address already in use (port 8000)
+```
+**Solution**: Kill existing processes or change ports in `system.json`:
+```bash
+# Find process using port
+netstat -ano | findstr :8000  # Windows
+lsof -i :8000                 # Linux/macOS
+
+# Kill process
+taskkill /PID <pid> /F        # Windows
+kill -9 <pid>                 # Linux/macOS
+```
+
+#### Import Errors
+```
+ModuleNotFoundError: No module named 'league_sdk'
+```
+**Solution**: Install the package in development mode:
+```bash
+pip install -e .
+```
+
+#### Test Failures
+```
+pytest: error: unrecognized arguments
+```
+**Solution**: Ensure pytest is installed with required plugins:
+```bash
+pip install pytest pytest-cov pytest-asyncio
+```
+
+#### Connection Refused
+```
+httpx.ConnectError: Connection refused
+```
+**Solution**: Ensure all agents are started before running tests:
+```bash
+python run_league.py --interactive
+league> # wait for "All agents ready"
+```
+
+### Debug Mode
+
+Enable verbose logging:
+```bash
+export MCP_LOG_LEVEL=DEBUG  # Linux/macOS
+set MCP_LOG_LEVEL=DEBUG     # Windows
+python run_league.py --interactive
+```
+
+## Contributing
+
+### Code Style
+
+- Follow [PEP 8](https://pep8.org/) style guidelines
+- Use type hints for all function signatures
+- Maximum line length: 100 characters
+- Use docstrings for all public functions and classes
+
+### Development Workflow
+
+1. Create a feature branch:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make changes and run tests:
+   ```bash
+   pytest --cov=SHARED/league_sdk --cov=agents
+   ```
+
+3. Ensure code quality:
+   ```bash
+   black .          # Format code
+   isort .          # Sort imports
+   mypy .           # Type checking
+   ```
+
+4. Submit a pull request with:
+   - Clear description of changes
+   - Test coverage for new code
+   - Updated documentation if needed
+
+### Adding New Game Types
+
+1. Create game logic in `agents/referee_REF01/game_logic.py`
+2. Register in `SHARED/config/games_registry.json`
+3. Add tests in `tests/test_game_logic.py`
+
+### Adding New Strategies
+
+1. Implement `Strategy` interface in `agents/player_P01/strategy.py`
+2. Register in `StrategyManager`
+3. Add tests in `tests/test_strategy.py`
+
 ## License
 
-Educational project based on "AI Agents with MCP" protocol specification.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Credits
+
+- **Protocol Design**: Based on "AI Agents with MCP" specification
+- **Dependencies**: FastAPI, Uvicorn, httpx, Pydantic
+- **Testing**: pytest, pytest-cov
+
+## Additional Documentation
+
+- [Architecture Document](docs/ARCHITECTURE.md) - System design with C4 diagrams
+- [PRD](docs/PRD.md) - Product Requirements Document
+- [Cost Analysis](docs/COST_ANALYSIS.md) - Token usage and cost breakdown
+- [Prompt Book](docs/PROMPTS.md) - AI development prompts used

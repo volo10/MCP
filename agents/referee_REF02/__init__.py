@@ -8,3 +8,4 @@ from .game_logic import EvenOddGame, GameState, MatchResult, GameResult
 
 __all__ = ["EvenOddGame", "GameState", "MatchResult", "GameResult"]
 
+__version__ = "1.0.0"

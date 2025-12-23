@@ -6,7 +6,10 @@
       "Bash(python -m pytest:*)",
       "Bash(where:*)",
       "Bash(python3 -m pytest:*)",
-      "Bash(py -m pytest:*)"
+      "Bash(py -m pytest:*)",
+      "Bash(dir /s /b \"C:\\\\D\\\\Code\\\\Multiple_Agents_With_LLMs\\\\MCP\")",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Filter ''*.py'' | Where-Object { $_FullName -notmatch ''__pycache__'' -and $_FullName -notmatch ''test_'' } | ForEach-Object { $lines = \\(Get-Content $_FullName | Measure-Object -Line\\).Lines; if \\($lines -gt 150\\) { Write-Host $_Name '':'' $lines ''lines'' } }\")"
     ]
   }
 }

@@ -1,0 +1,616 @@
+Here is the translation of the document "Lesson 7 Summary: MCP Protocol and Agent League" into English, based on the provided file.
+
+Lesson 7 Summary 
+
+MCP Protocol and Agent League 
+
+* 
+**Lecturer:** Dr. Yoram Segal 
+
+
+* 
+**Course:** AI Agents 
+
+
+* 
+**Keywords:** 
+
+
+* Client-Server MCP, Communication Protocol, Agents, League, Tools 
+
+
+* Resources, Session Management, JSON, Distributed Architecture 
+
+
+
+
+* All rights reserved to Dr. Yoram Segal (c) 
+
+
+
+---
+
+Table of Contents 
+
+* 1. Introduction to MCP Protocol 
+
+
+* 1.1 Background and Development
+* 1.2 Basic Definitions
+
+
+* 2. Architecture 
+
+
+* 2.1 The Problem the Protocol Solves
+* 2.2 Client-Server Architecture in MCP
+* 2.3 Connection Lifecycle
+
+
+* 3. Protocol Components 
+
+
+* 1.3 Tools
+* 2.3 Resources
+* 3.3 Prompts
+
+
+* 4. Client Architecture 
+
+
+* 1.4 Client Layers
+* 2.4 Essential Modules
+* 1.2.4 Session Manager
+* 2.2.4 Tool Registry
+* 3.2.4 Message Queue Management
+
+
+* 3.4 Error Handling
+
+
+* 5. Working with Multiple Servers 
+
+
+* 1.5 Star Topology
+* 2.5 Load Balancing
+
+
+* 6. Information Security 
+
+
+* 1.6 Common Threats
+* 2.6 Recommended Defenses
+
+
+* 7. Assignment: Agent League 
+
+
+* 1.7 Task Description
+* 2.7 Game Rules
+* 3.7 Architectural Principles
+* 4.7 Message Structure in the Protocol
+
+
+* 8. Summary 
+
+
+* 1.8 Key Points
+* 2.8 Preparation for Final Project
+
+
+
+---
+
+1. Introduction to MCP Protocol 
+
+1.1 Background and Development 
+
+* The Model Context Protocol (MCP) is a communication standard developed by Anthropic to enable uniform communication between Language Models (LLMs) and external services.
+
+
+* The protocol constitutes a revolution in the field of AI agents.
+
+
+* 
+**Historical Development:** 
+
+
+* Newspapers - initial medium of communication.
+
+
+* HTTP - The Internet Protocol.
+
+
+* USB - Standard for physical data transfer.
+
+
+* MCP - Protocol for communication between AI agents.
+
+
+
+
+
+2.1 The Problem the Protocol Solves 
+
+* Before MCP, every agent required a unique integration for every service. This situation created: 
+
+
+* Complexity of . For example, 5 agents times 5 servers = 25 integrations.
+
+
+* Difficulty in maintenance and expansion.
+
+
+* Scalability issues.
+
+
+
+
+* With MCP: The complexity drops to . For example, 5 agents + 5 servers = 10 connections only.
+
+
+
+---
+
+2. Client-Server Architecture in MCP 
+
+1.2 Basic Definitions 
+
+* 
+**Client:** 
+
+
+* Initiates the contact with the server.
+
+
+* Contains the Language Model (LLM).
+
+
+* Manages sessions, tools, messages, and resources.
+
+
+* It is the "Brain" of the system.
+
+
+
+
+* 
+**Server:** 
+
+
+* Passive - waits for requests.
+
+
+* Provides Tools and Resources.
+
+
+* It is the "Hands and Feet" of the system.
+
+
+* Performs deterministic actions.
+
+
+
+
+* 
+**Important to understand:** In MCP, the Client is not purely a client, and the Server is not purely a server. Both can initiate and receive requests.
+
+
+
+2.2 Connection Lifecycle 
+
+1. 
+**Initialize Phase:** Opening a connection between the Client and Server.
+
+
+2. 
+**Operation Phase:** The Client sends requests, and the Server returns a list of capabilities and tools.
+
+
+3. 
+**Close Phase:** Orderly closing and releasing of resources.
+
+
+
+---
+
+3. Protocol Components 
+
+1.3 Tools 
+
+* Tools are functions the model can execute to perform actions or calculations.
+
+
+* 
+**Tool Definition Structure:** 
+
+
+* 
+**name:** Unique name for identification.
+
+
+* 
+**description:** Explanation to the model of what the tool does.
+
+
+* 
+**input_schema:** Parameter definition (JSON Schema).
+
+
+
+
+* Example: Calculator - receives two operands and an operation, returns a result.
+
+
+
+2.3 Resources 
+
+* Resources are information sources that the model can read but not modify (Read-Only).
+
+
+* 
+**Examples:** 
+
+
+* Databases.
+
+
+* Web pages.
+
+
+* PDF files.
+
+
+* Images.
+
+
+
+
+
+3.3 Prompts 
+
+* Ready-made templates for guiding the model to perform specific tasks.
+
+
+
+---
+
+4. Client Architecture 
+
+1.4 Client Layers 
+
+1. 
+**Language Model (LLM):** Makes decisions and initiates actions.
+
+
+2. 
+**Client Interface:** The API the model works against.
+
+
+3. 
+**System Core:** Session manager and tool registry.
+
+
+4. 
+**Message Processing:** Conversion to JSON.
+
+
+5. 
+**Communication Layer:** Translation to STDIO or HTTP.
+
+
+
+2.4 Essential Modules 
+
+* 
+**1.2.4 Session Manager:** 
+
+
+* Manages connection lifecycles.
+
+
+* 
+**Handshake:** Verification that the connection succeeded.
+
+
+* Manages **Heartbeat** - periodic pulse checks.
+
+
+* 
+**Retry Logic** - automatic mechanism to renew contact.
+
+
+
+
+* 
+**2.2.4 Tool Registry:** 
+
+
+* Holds a list of available tools from every server.
+
+
+* Centralizes information for the LLM's use.
+
+
+* Handles name collisions between different servers.
+
+
+
+
+* 
+**3.2.4 Message Queue Management:** 
+
+
+* Manages a queue of incoming and outgoing messages.
+
+
+* Handles priorities.
+
+
+* Prevents flooding.
+
+
+
+
+
+3.4 Error Handling 
+
+* 
+**Types of Errors:** 
+
+
+* 
+**Transient:** Temporary errors (network, load) - worth trying again.
+
+
+* 
+**Permanent:** Permanent errors (missing file, permission) - no point in trying.
+
+
+* 
+**Timeout:** Time limit exceeded - the wait time can be increased.
+
+
+
+
+* 
+**Exponential Backoff Strategy:** 
+
+
+* The wait time between attempts grows exponentially:
+
+
+* Attempt 1: Short wait.
+
+
+* Attempt 2: Double the wait.
+
+
+* Attempt 3: Wait times 4.
+
+
+* And so on....
+
+
+
+
+
+
+* 
+**Important:** Add **Jitter** (random noise) to prevent multiple processes from waking up simultaneously.
+
+
+
+---
+
+5. Working with Multiple Servers 
+
+1.5 Star Topology 
+
+* One client centralizes communication against many servers. The client: 
+
+
+* Presents a unified list of tools to the LLM.
+
+
+* Manages namespaces to prevent collisions.
+
+
+* Routes requests to the appropriate server.
+
+
+
+
+
+2.5 Load Balancing 
+
+* 
+**Common Strategies:** 
+
+
+* 
+**Round Robin:** Equal circular distribution.
+
+
+* 
+**Least Connections:** Routing to the freest server.
+
+
+* 
+**Weighted:** Priority to stronger servers.
+
+
+
+
+
+---
+
+6. Information Security 
+
+1.6 Common Threats 
+
+* 
+**Prompt Injection attacks via internet content:** 
+
+
+* Hackers insert malicious instructions into innocent web pages.
+
+
+* The LLM reads the content and executes the instructions.
+
+
+* There is currently no perfect solution to this problem.
+
+
+
+
+
+2.6 Recommended Defenses 
+
+* Working within Docker or virtual environments (Sandbox).
+
+
+* Limiting access permissions to folders.
+
+
+* Defining damage limits in advance.
+
+
+* Full Logging documentation of all actions.
+
+
+
+---
+
+7. Assignment: Agent League 
+
+1.7 Task Description 
+
+* Building a league of AI agents playing the "Odds or Evens" game.
+
+
+* 
+**System Components:** 
+
+
+1. 
+**League Manager:** Defines game rounds, pairs players, manages rankings.
+
+
+2. 
+**Referee:** Manages a single game between two players.
+
+
+3. 
+**Players:** Four agents playing against each other.
+
+
+
+
+
+2.7 Game Rules 
+
+* Each player chooses "Even" or "Odd".
+
+
+* The referee draws a number.
+
+
+* If both were correct or both were wrong - it is a draw.
+
+
+* If one was right and the other wrong - the winner is the one who was right.
+
+
+* 30 seconds for a response, 3 attempts before disqualification.
+
+
+
+3.7 Architectural Principles 
+
+1. 
+**Separation of Responsibility:** The League and Referee layers are independent of the specific game.
+
+
+2. 
+**Modularity:** The game can be easily replaced.
+
+
+3. 
+**Uniform Protocol:** All messages in JSON with a fixed structure.
+
+
+
+4.7 Message Structure in Protocol 
+
+* Every message must include: 
+
+
+* 
+**protocol:** Protocol version.
+
+
+* 
+**message_type:** Message type.
+
+
+* 
+**league_id:** League identifier.
+
+
+* 
+**round:** Round number.
+
+
+* 
+**match_id:** Game identifier.
+
+
+* 
+**timestamp:** Time stamp.
+
+
+
+
+
+---
+
+8. Summary 
+
+1.8 Key Points 
+
+1. MCP enables uniform communication between AI agents and external services.
+
+
+2. The Client is the "Brain" (with the LLM), the Server is the "Hands and Feet".
+
+
+3. Strict management of sessions, tools, and messages must be maintained.
+
+
+4. Recovery and security mechanisms are critical.
+
+
+5. The architecture must be modular and scalable.
+
+
+
+2.8 Preparation for Final Project 
+
+* The current assignment is the basis for the final project: 
+
+
+* In the final project: A league of the entire class.
+
+
+* The game will be more complex (possibly "Ultimate Tic-Tac-Toe").
+
+
+* The agents will use real AI strategies.
+
+
+
+
+* All rights reserved to Dr. Yoram Segal (c) 
+
+

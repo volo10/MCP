@@ -334,12 +334,13 @@ class PlayerHandlers:
     async def handle_round_completed(self, params: dict) -> dict:
         """Handle ROUND_COMPLETED notification."""
         round_id = params.get("round_id")
-        matches_played = params.get("matches_played")
+        # Accept both field names for compatibility
+        matches_completed = params.get("matches_completed", params.get("matches_played"))
         next_round_id = params.get("next_round_id")
-        
+
         self.state.logger.info("ROUND_COMPLETED_RECEIVED",
                                round_id=round_id,
-                               matches_played=matches_played,
+                               matches_completed=matches_completed,
                                next_round_id=next_round_id)
         
         return {

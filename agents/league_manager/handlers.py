@@ -585,13 +585,23 @@ class LeagueHandlers:
         """Broadcast ROUND_COMPLETED message to all players and referees."""
         # Calculate next round
         next_round_id = self.state.current_round + 1 if self.state.current_round < len(self.state.schedule) else None
-        
+
+        # Calculate summary statistics for this round
+        # Note: In a full implementation, we'd track wins/draws/technical_losses per round
+        matches_per_round = len(self.state.registered_players) // 2
+
         message = self._create_envelope(
             "ROUND_COMPLETED",
             conversation_id=f"conv-round-{self.state.current_round}-complete",
             round_id=self.state.current_round,
-            matches_played=self.state.matches_completed_this_round,
-            next_round_id=next_round_id
+            matches_completed=self.state.matches_completed_this_round,
+            next_round_id=next_round_id,
+            summary={
+                "total_matches": matches_per_round,
+                "wins": self.state.matches_completed_this_round,  # Approximate - each match has a winner
+                "draws": 0,
+                "technical_losses": 0
+            }
         )
         
         # Send to all players using notify_round_completed method

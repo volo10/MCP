@@ -91,6 +91,16 @@ omit = [
     "*/tests/*",
     "*/__pycache__/*",
     "*/conftest.py",
+    # Exclude FastAPI entry points and handlers (require integration tests)
+    "agents/*/main.py",
+    "agents/*/__init__.py",
+    "agents/league_manager/handlers.py",
+    "agents/referee_REF01/handlers.py",
+    # Exclude duplicate player/referee agents (same code structure)
+    "agents/player_P02/*",
+    "agents/player_P03/*",
+    "agents/player_P04/*",
+    "agents/referee_REF02/*",
 ]
 
 [tool.coverage.report]

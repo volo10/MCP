@@ -1,0 +1,27 @@
+# MCP League System - Requirements
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+fastapi>=0.104.0
+uvicorn>=0.24.0
+httpx>=0.25.0
+pydantic>=2.0.0
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+
+# Analysis dependencies (optional)
+# Install with: pip install -r requirements.txt[analysis]
+# jupyter>=1.0.0
+# matplotlib>=3.7.0
+# pandas>=2.0.0
+# seaborn>=0.12.0
+# numpy>=1.24.0
+
+# Code quality (optional)
+# mypy>=1.5.0
+# black>=23.0.0
+# isort>=5.12.0
+# flake8>=6.1.0

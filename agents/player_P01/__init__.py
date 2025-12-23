@@ -35,3 +35,5 @@ __all__ = [
     "RetryableError",
 ]
 
+__version__ = "1.0.0"
+
