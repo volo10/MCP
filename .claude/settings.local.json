@@ -9,7 +9,12 @@
       "Bash(py -m pytest:*)",
       "Bash(dir /s /b \"C:\\\\D\\\\Code\\\\Multiple_Agents_With_LLMs\\\\MCP\")",
       "Bash(findstr:*)",
-      "Bash(powershell -Command \"Get-ChildItem -Recurse -Filter ''*.py'' | Where-Object { $_FullName -notmatch ''__pycache__'' -and $_FullName -notmatch ''test_'' } | ForEach-Object { $lines = \\(Get-Content $_FullName | Measure-Object -Line\\).Lines; if \\($lines -gt 150\\) { Write-Host $_Name '':'' $lines ''lines'' } }\")"
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Filter ''*.py'' | Where-Object { $_FullName -notmatch ''__pycache__'' -and $_FullName -notmatch ''test_'' } | ForEach-Object { $lines = \\(Get-Content $_FullName | Measure-Object -Line\\).Lines; if \\($lines -gt 150\\) { Write-Host $_Name '':'' $lines ''lines'' } }\")",
+      "Bash(xargs:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(python3 -c \"import ast; files = __import__\\(''subprocess''\\).check_output\\(''find agents SHARED -name \"\"*.py\"\" -not -path \"\"*__pycache__*\"\" -not -path \"\"*test*\"\"'', shell=True, text=True\\).strip\\(\\).split\\(''\\\\n''\\); print\\(f''Total Python modules: {len\\([f for f in files if f]\\)}''\\); print\\(f''Sample files:''\\); import subprocess; print\\(subprocess.check_output\\(''find agents SHARED -type f -name \"\"*.py\"\" | grep -v __pycache__ | head -20'', shell=True, text=True\\)\\)\")"
     ]
   }
 }
