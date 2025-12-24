@@ -25,7 +25,10 @@ from fastapi.responses import JSONResponse
 SHARED_PATH = Path(__file__).parent.parent.parent / "SHARED"
 sys.path.insert(0, str(SHARED_PATH))
 
-from league_sdk import ConfigLoader, StandingsRepository, JsonLogger
+from league_sdk import (
+    ConfigLoader, StandingsRepository, JsonLogger,
+    MCPDiscovery, get_league_manager_tools, get_league_manager_resources
+)
 from handlers import LeagueHandlers
 from scheduler import RoundRobinScheduler
 
@@ -66,6 +69,39 @@ class LeagueState:
 
         # Standings repository
         self.standings_repo = StandingsRepository(self.league_id)
+
+        # MCP Discovery
+        self.mcp_discovery = MCPDiscovery("league_manager", "league_manager")
+        self._init_mcp_discovery()
+
+    def _init_mcp_discovery(self):
+        """Initialize MCP tools and resources."""
+        # Register tools
+        for tool in get_league_manager_tools():
+            self.mcp_discovery.register_tool(tool)
+
+        # Register resources with handlers
+        for resource in get_league_manager_resources(self.league_id):
+            handler = None
+            if "standings" in resource.uri:
+                handler = lambda: self.standings_repo.load()
+            elif "schedule" in resource.uri:
+                handler = lambda: {"schedule": self.schedule, "current_round": self.current_round}
+            elif "players" in resource.uri:
+                handler = lambda: {"players": self.registered_players}
+            elif "referees" in resource.uri:
+                handler = lambda: {"referees": self.registered_referees}
+            elif "config" in resource.uri:
+                handler = lambda: {
+                    "league_id": self.league_id,
+                    "game_type": self.league_config.game_type,
+                    "scoring": {
+                        "win": self.league_config.scoring.win_points,
+                        "draw": self.league_config.scoring.draw_points,
+                        "loss": self.league_config.scoring.loss_points
+                    }
+                }
+            self.mcp_discovery.register_resource(resource, handler)
 
 
 # Create global state instance
@@ -160,9 +196,15 @@ async def mcp_endpoint(request: Request):
     request_id = body.get("id")
     
     state.logger.debug("REQUEST_RECEIVED", method=method, request_id=request_id)
-    
+
     # Route to appropriate handler
     try:
+        # MCP Discovery methods (tools/list, resources/list, resources/read)
+        discovery_result = state.mcp_discovery.handle_mcp_method(method, params)
+        if discovery_result is not None:
+            return JSONResponse(create_jsonrpc_response(discovery_result, request_id))
+
+        # Standard league methods
         if method == "register_referee":
             result = await handlers.handle_register_referee(params)
         elif method == "register_player":

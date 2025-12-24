@@ -26,7 +26,10 @@ from fastapi.responses import JSONResponse
 SHARED_PATH = Path(__file__).parent.parent.parent / "SHARED"
 sys.path.insert(0, str(SHARED_PATH))
 
-from league_sdk import ConfigLoader, MatchRepository, JsonLogger
+from league_sdk import (
+    ConfigLoader, MatchRepository, JsonLogger,
+    MCPDiscovery, get_referee_tools, get_referee_resources
+)
 from game_logic import EvenOddGame
 from handlers import RefereeHandlers
 
@@ -72,6 +75,32 @@ class RefereeState:
 
         # Registration status
         self.registered = False
+
+        # MCP Discovery (initialized after registration when referee_id is known)
+        self.mcp_discovery = None
+
+    def init_mcp_discovery(self):
+        """Initialize MCP tools and resources after registration."""
+        ref_id = self.referee_id or "UNREGISTERED"
+        self.mcp_discovery = MCPDiscovery(ref_id, "referee")
+
+        # Register tools
+        for tool in get_referee_tools():
+            self.mcp_discovery.register_tool(tool)
+
+        # Register resources with handlers
+        for resource in get_referee_resources(ref_id):
+            handler = None
+            if "active_matches" in resource.uri:
+                handler = lambda: {"active_matches": self.active_matches}
+            elif "config" in resource.uri:
+                handler = lambda: {
+                    "referee_id": self.referee_id,
+                    "display_name": self.display_name,
+                    "endpoint": self.endpoint,
+                    "registered": self.registered
+                }
+            self.mcp_discovery.register_resource(resource, handler)
 
 
 # Global state (initialized in main)
@@ -124,7 +153,10 @@ async def register_with_league_manager():
                     state.referee_id = result.get("referee_id")
                     state.auth_token = result.get("auth_token")
                     state.registered = True
-                    
+
+                    # Initialize MCP discovery with actual referee_id
+                    state.init_mcp_discovery()
+
                     # Update logger with actual referee_id
                     state.logger = JsonLogger(
                         f"referee:{state.referee_id}", 
@@ -235,8 +267,15 @@ async def mcp_endpoint(request: Request):
     request_id = body.get("id")
     
     state.logger.debug("REQUEST_RECEIVED", method=method)
-    
+
     try:
+        # MCP Discovery methods (tools/list, resources/list, resources/read)
+        if state.mcp_discovery:
+            discovery_result = state.mcp_discovery.handle_mcp_method(method, params)
+            if discovery_result is not None:
+                return JSONResponse(create_jsonrpc_response(discovery_result, request_id))
+
+        # Standard referee methods
         if method == "notify" or method == "notify_round":
             # Handle notifications (ROUND_ANNOUNCEMENT, etc.)
             result = await handlers.handle_notification(params)

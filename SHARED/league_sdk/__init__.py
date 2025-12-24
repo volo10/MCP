@@ -53,6 +53,19 @@ from .parallel import (
     get_recommended_process_count,
 )
 
+from .mcp_discovery import (
+    Tool,
+    ToolParameter,
+    Resource,
+    MCPDiscovery,
+    get_player_tools,
+    get_referee_tools,
+    get_league_manager_tools,
+    get_player_resources,
+    get_referee_resources,
+    get_league_manager_resources,
+)
+
 __all__ = [
     # Config Models
     "NetworkConfig",
@@ -93,6 +106,17 @@ __all__ = [
     "get_cpu_count",
     "get_recommended_thread_count",
     "get_recommended_process_count",
+    # MCP Discovery
+    "Tool",
+    "ToolParameter",
+    "Resource",
+    "MCPDiscovery",
+    "get_player_tools",
+    "get_referee_tools",
+    "get_league_manager_tools",
+    "get_player_resources",
+    "get_referee_resources",
+    "get_league_manager_resources",
 ]
 
 __version__ = "1.0.0"

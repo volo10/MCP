@@ -14,7 +14,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
-      "Bash(python3 -c \"import ast; files = __import__\\(''subprocess''\\).check_output\\(''find agents SHARED -name \"\"*.py\"\" -not -path \"\"*__pycache__*\"\" -not -path \"\"*test*\"\"'', shell=True, text=True\\).strip\\(\\).split\\(''\\\\n''\\); print\\(f''Total Python modules: {len\\([f for f in files if f]\\)}''\\); print\\(f''Sample files:''\\); import subprocess; print\\(subprocess.check_output\\(''find agents SHARED -type f -name \"\"*.py\"\" | grep -v __pycache__ | head -20'', shell=True, text=True\\)\\)\")"
+      "Bash(python3 -c \"import ast; files = __import__\\(''subprocess''\\).check_output\\(''find agents SHARED -name \"\"*.py\"\" -not -path \"\"*__pycache__*\"\" -not -path \"\"*test*\"\"'', shell=True, text=True\\).strip\\(\\).split\\(''\\\\n''\\); print\\(f''Total Python modules: {len\\([f for f in files if f]\\)}''\\); print\\(f''Sample files:''\\); import subprocess; print\\(subprocess.check_output\\(''find agents SHARED -type f -name \"\"*.py\"\" | grep -v __pycache__ | head -20'', shell=True, text=True\\)\\)\")",
+      "WebSearch"
     ]
   }
 }

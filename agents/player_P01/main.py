@@ -24,7 +24,10 @@ from fastapi.responses import JSONResponse
 SHARED_PATH = Path(__file__).parent.parent.parent / "SHARED"
 sys.path.insert(0, str(SHARED_PATH))
 
-from league_sdk import ConfigLoader, PlayerHistoryRepository, JsonLogger
+from league_sdk import (
+    ConfigLoader, PlayerHistoryRepository, JsonLogger,
+    MCPDiscovery, get_player_tools, get_player_resources
+)
 from handlers import PlayerHandlers
 from strategy import RandomStrategy, HistoryBasedStrategy, StrategyManager
 from resilience import RetryClient
@@ -70,6 +73,35 @@ class PlayerState:
         retry_config = self.system_config.retry_policy
         self.max_retries = retry_config.max_retries
         self.backoff_strategy = retry_config.backoff_strategy
+
+        # MCP Discovery (initialized after registration when player_id is known)
+        self.mcp_discovery = None
+
+    def init_mcp_discovery(self):
+        """Initialize MCP tools and resources after registration."""
+        player_id = self.player_id or "UNREGISTERED"
+        self.mcp_discovery = MCPDiscovery(player_id, "player")
+
+        # Register tools
+        for tool in get_player_tools():
+            self.mcp_discovery.register_tool(tool)
+
+        # Register resources with handlers
+        for resource in get_player_resources(player_id):
+            handler = None
+            if "stats" in resource.uri:
+                handler = lambda: self.history_repo.get_stats() if self.history_repo else {}
+            elif "history" in resource.uri:
+                handler = lambda: {"matches": self.history_repo.get_matches(10) if self.history_repo else []}
+            elif "config" in resource.uri:
+                handler = lambda: {
+                    "player_id": self.player_id,
+                    "display_name": self.display_name,
+                    "endpoint": self.endpoint,
+                    "strategy": self.strategy_type,
+                    "registered": self.registered
+                }
+            self.mcp_discovery.register_resource(resource, handler)
 
 
 # Global state (initialized in main)
@@ -128,21 +160,24 @@ async def register_with_league_manager():
                 state.player_id = result.get("player_id")
                 state.auth_token = result.get("auth_token")
                 state.registered = True
-                
+
                 # Update logger with actual player_id
                 state.logger = JsonLogger(
                     f"player:{state.player_id}",
                     state.league_id
                 )
-                
+
                 # Initialize history repository
                 state.history_repo = PlayerHistoryRepository(state.player_id)
-                
+
                 # Initialize strategy manager
                 state.strategy_manager = StrategyManager(
                     state.strategy_type,
                     state.history_repo
                 )
+
+                # Initialize MCP discovery with actual player_id
+                state.init_mcp_discovery()
                 
                 state.logger.info("REGISTRATION_SUCCESS",
                                   player_id=state.player_id)
@@ -243,8 +278,15 @@ async def mcp_endpoint(request: Request):
     request_id = body.get("id")
     
     state.logger.debug("REQUEST_RECEIVED", method=method)
-    
+
     try:
+        # MCP Discovery methods (tools/list, resources/list, resources/read)
+        if state.mcp_discovery:
+            discovery_result = state.mcp_discovery.handle_mcp_method(method, params)
+            if discovery_result is not None:
+                return JSONResponse(create_jsonrpc_response(discovery_result, request_id))
+
+        # Standard player methods
         if method == "handle_game_invitation" or method == "game_invitation":
             # GAME_INVITATION (Ch. 8.7.1)
             result = await handlers.handle_game_invitation(params)
