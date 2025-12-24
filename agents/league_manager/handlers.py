@@ -49,76 +49,79 @@ class LeagueHandlers:
     async def handle_register_referee(self, params: dict) -> dict:
         """
         Handle REFEREE_REGISTER_REQUEST.
-        
+
         Assigns a unique referee_id and auth_token.
-        
+        Thread-safe: Uses asyncio.Lock to protect registration state.
+
         Args:
             params: Request parameters containing referee_meta.
-        
+
         Returns:
             REFEREE_REGISTER_RESPONSE envelope.
         """
-        # Validate required fields
+        # Validate required fields (outside lock - no state modification)
         referee_meta = params.get("referee_meta")
         if not referee_meta:
             raise ValueError("Missing required field: referee_meta")
-        
+
         display_name = referee_meta.get("display_name")
         if not display_name:
             raise ValueError("Missing required field: referee_meta.display_name")
-        
+
         contact_endpoint = referee_meta.get("contact_endpoint")
         if not contact_endpoint:
             raise ValueError("Missing required field: referee_meta.contact_endpoint")
-        
+
         game_types = referee_meta.get("game_types", [])
         version = referee_meta.get("version", "1.0.0")
         max_concurrent = referee_meta.get("max_concurrent_matches", 2)
-        
+
         # Get conversation_id from request
         conversation_id = params.get("conversation_id", f"conv-ref-{display_name.lower().replace(' ', '-')}-reg")
-        
-        # Check if referee is already registered by endpoint
-        for ref_id, ref_data in self.state.registered_referees.items():
-            if ref_data["endpoint"] == contact_endpoint:
-                # Already registered, return existing info
-                self.state.logger.info("REFEREE_ALREADY_REGISTERED",
-                                       referee_id=ref_id,
-                                       display_name=display_name)
-                return self._create_envelope(
-                    "REFEREE_REGISTER_RESPONSE",
-                    conversation_id=conversation_id,
-                    status="ACCEPTED",
-                    referee_id=ref_id,
-                    auth_token=ref_data["auth_token"],
-                    reason="Already registered"
-                )
-        
-        # Generate new referee ID
-        self.state._referee_counter += 1
-        referee_id = f"REF{self.state._referee_counter:02d}"
-        
-        # Generate auth token
-        auth_token = self._generate_auth_token()
-        
-        # Store registration
-        self.state.registered_referees[referee_id] = {
-            "referee_id": referee_id,
-            "display_name": display_name,
-            "endpoint": contact_endpoint,
-            "version": version,
-            "game_types": game_types,
-            "max_concurrent_matches": max_concurrent,
-            "auth_token": auth_token,
-            "registered_at": datetime.utcnow().isoformat() + "Z",
-            "active": True
-        }
-        
+
+        # Critical section: protect counter increment and dictionary access
+        async with self.state._registration_lock:
+            # Check if referee is already registered by endpoint
+            for ref_id, ref_data in self.state.registered_referees.items():
+                if ref_data["endpoint"] == contact_endpoint:
+                    # Already registered, return existing info
+                    self.state.logger.info("REFEREE_ALREADY_REGISTERED",
+                                           referee_id=ref_id,
+                                           display_name=display_name)
+                    return self._create_envelope(
+                        "REFEREE_REGISTER_RESPONSE",
+                        conversation_id=conversation_id,
+                        status="ACCEPTED",
+                        referee_id=ref_id,
+                        auth_token=ref_data["auth_token"],
+                        reason="Already registered"
+                    )
+
+            # Generate new referee ID (atomic with counter increment)
+            self.state._referee_counter += 1
+            referee_id = f"REF{self.state._referee_counter:02d}"
+
+            # Generate auth token
+            auth_token = self._generate_auth_token()
+
+            # Store registration
+            self.state.registered_referees[referee_id] = {
+                "referee_id": referee_id,
+                "display_name": display_name,
+                "endpoint": contact_endpoint,
+                "version": version,
+                "game_types": game_types,
+                "max_concurrent_matches": max_concurrent,
+                "auth_token": auth_token,
+                "registered_at": datetime.utcnow().isoformat() + "Z",
+                "active": True
+            }
+
         self.state.logger.info("REFEREE_REGISTERED",
                                referee_id=referee_id,
                                display_name=display_name,
                                game_types=game_types)
-        
+
         return self._create_envelope(
             "REFEREE_REGISTER_RESPONSE",
             conversation_id=conversation_id,
@@ -131,77 +134,80 @@ class LeagueHandlers:
     async def handle_register_player(self, params: dict) -> dict:
         """
         Handle LEAGUE_REGISTER_REQUEST.
-        
+
         Assigns a unique player_id and auth_token.
-        
+        Thread-safe: Uses asyncio.Lock to protect registration state.
+
         Args:
             params: Request parameters containing player_meta.
-        
+
         Returns:
             LEAGUE_REGISTER_RESPONSE envelope.
         """
-        # Validate required fields
+        # Validate required fields (outside lock - no state modification)
         player_meta = params.get("player_meta")
         if not player_meta:
             raise ValueError("Missing required field: player_meta")
-        
+
         display_name = player_meta.get("display_name")
         if not display_name:
             raise ValueError("Missing required field: player_meta.display_name")
-        
+
         contact_endpoint = player_meta.get("contact_endpoint")
         if not contact_endpoint:
             raise ValueError("Missing required field: player_meta.contact_endpoint")
-        
+
         game_types = player_meta.get("game_types", [])
         version = player_meta.get("version", "1.0.0")
-        
+
         # Get conversation_id from request
         conversation_id = params.get("conversation_id", f"conv-player-{display_name.lower().replace(' ', '-')}-reg")
-        
-        # Check if player is already registered by endpoint
-        for player_id, player_data in self.state.registered_players.items():
-            if player_data["endpoint"] == contact_endpoint:
-                # Already registered, return existing info
-                self.state.logger.info("PLAYER_ALREADY_REGISTERED",
-                                       player_id=player_id,
-                                       display_name=display_name)
-                return self._create_envelope(
-                    "LEAGUE_REGISTER_RESPONSE",
-                    conversation_id=conversation_id,
-                    status="ACCEPTED",
-                    player_id=player_id,
-                    auth_token=player_data["auth_token"],
-                    reason="Already registered"
-                )
-        
-        # Generate new player ID
-        self.state._player_counter += 1
-        player_id = f"P{self.state._player_counter:02d}"
-        
-        # Generate auth token
-        auth_token = self._generate_auth_token()
-        
-        # Store registration
-        self.state.registered_players[player_id] = {
-            "player_id": player_id,
-            "display_name": display_name,
-            "endpoint": contact_endpoint,
-            "version": version,
-            "game_types": game_types,
-            "auth_token": auth_token,
-            "registered_at": datetime.utcnow().isoformat() + "Z",
-            "active": True
-        }
-        
+
+        # Critical section: protect counter increment and dictionary access
+        async with self.state._registration_lock:
+            # Check if player is already registered by endpoint
+            for player_id, player_data in self.state.registered_players.items():
+                if player_data["endpoint"] == contact_endpoint:
+                    # Already registered, return existing info
+                    self.state.logger.info("PLAYER_ALREADY_REGISTERED",
+                                           player_id=player_id,
+                                           display_name=display_name)
+                    return self._create_envelope(
+                        "LEAGUE_REGISTER_RESPONSE",
+                        conversation_id=conversation_id,
+                        status="ACCEPTED",
+                        player_id=player_id,
+                        auth_token=player_data["auth_token"],
+                        reason="Already registered"
+                    )
+
+            # Generate new player ID (atomic with counter increment)
+            self.state._player_counter += 1
+            player_id = f"P{self.state._player_counter:02d}"
+
+            # Generate auth token
+            auth_token = self._generate_auth_token()
+
+            # Store registration
+            self.state.registered_players[player_id] = {
+                "player_id": player_id,
+                "display_name": display_name,
+                "endpoint": contact_endpoint,
+                "version": version,
+                "game_types": game_types,
+                "auth_token": auth_token,
+                "registered_at": datetime.utcnow().isoformat() + "Z",
+                "active": True
+            }
+
         # Note: Standings are initialized when the league starts (handle_start_league)
         # This ensures a clean slate for each league run
-        
+
         self.state.logger.info("PLAYER_REGISTERED",
                                player_id=player_id,
                                display_name=display_name,
                                game_types=game_types)
-        
+
         return self._create_envelope(
             "LEAGUE_REGISTER_RESPONSE",
             conversation_id=conversation_id,
@@ -218,79 +224,88 @@ class LeagueHandlers:
     async def handle_match_result_report(self, params: dict) -> dict:
         """
         Handle MATCH_RESULT_REPORT from a referee.
-        
+
         Updates standings and tracks round progress.
-        
+        Thread-safe: Uses asyncio.Lock to protect match result processing.
+
         Args:
             params: Match result parameters.
-        
+
         Returns:
             Acknowledgment envelope.
         """
-        # Validate auth token
+        # Validate auth token (outside lock - read-only check)
         auth_token = params.get("auth_token")
         sender = params.get("sender", "")
-        
+
         if sender.startswith("referee:"):
             referee_id = sender.split(":")[1]
             if referee_id in self.state.registered_referees:
                 expected_token = self.state.registered_referees[referee_id]["auth_token"]
                 if auth_token != expected_token:
                     raise ValueError("Invalid auth_token")
-        
+
         # Extract result data
         match_id = params.get("match_id")
         round_id = params.get("round_id")
         result = params.get("result", {})
-        
+
         winner = result.get("winner")
         score = result.get("score", {})
-        
+
         self.state.logger.info("MATCH_RESULT_RECEIVED",
                                match_id=match_id,
                                round_id=round_id,
                                winner=winner)
-        
-        # Update standings for each player
-        for player_id, points in score.items():
-            if player_id in self.state.registered_players:
-                display_name = self.state.registered_players[player_id]["display_name"]
-                
-                if winner == player_id:
-                    match_result = "WIN"
-                elif winner is None:
-                    match_result = "DRAW"
-                else:
-                    match_result = "LOSS"
-                
-                self.state.standings_repo.update_player(
-                    player_id=player_id,
-                    display_name=display_name,
-                    result=match_result,
-                    points=points
-                )
-        
-        # Track round progress
-        self.state.matches_completed_this_round += 1
-        
-        # Check if round is complete
-        matches_per_round = len(self.state.registered_players) // 2
-        if self.state.matches_completed_this_round >= matches_per_round:
-            self.state.standings_repo.increment_rounds_completed()
-            self.state.logger.info("ROUND_COMPLETED",
-                                   round_id=self.state.current_round,
-                                   matches_completed=self.state.matches_completed_this_round)
-            
-            # Broadcast ROUND_COMPLETED message
+
+        # Critical section: protect standings updates and round progress counter
+        round_completed = False
+        league_completed = False
+
+        async with self.state._match_result_lock:
+            # Update standings for each player
+            for player_id, points in score.items():
+                if player_id in self.state.registered_players:
+                    display_name = self.state.registered_players[player_id]["display_name"]
+
+                    if winner == player_id:
+                        match_result = "WIN"
+                    elif winner is None:
+                        match_result = "DRAW"
+                    else:
+                        match_result = "LOSS"
+
+                    self.state.standings_repo.update_player(
+                        player_id=player_id,
+                        display_name=display_name,
+                        result=match_result,
+                        points=points
+                    )
+
+            # Track round progress (atomic increment)
+            self.state.matches_completed_this_round += 1
+
+            # Check if round is complete
+            matches_per_round = len(self.state.registered_players) // 2
+            if self.state.matches_completed_this_round >= matches_per_round:
+                self.state.standings_repo.increment_rounds_completed()
+                self.state.logger.info("ROUND_COMPLETED",
+                                       round_id=self.state.current_round,
+                                       matches_completed=self.state.matches_completed_this_round)
+                round_completed = True
+
+                # Check if league is complete (all rounds played)
+                if self.state.current_round >= len(self.state.schedule):
+                    league_completed = True
+
+        # Broadcast messages outside the lock to avoid holding it during I/O
+        if round_completed:
             await self._broadcast_round_completed()
-            
-            # Broadcast standings update
             await self._broadcast_standings_update()
-            
-            # Check if league is complete (all rounds played)
-            if self.state.current_round >= len(self.state.schedule):
+
+            if league_completed:
                 await self._broadcast_league_completed()
-        
+
         return self._create_envelope(
             "MATCH_RESULT_ACK",
             match_id=match_id,
@@ -304,123 +319,135 @@ class LeagueHandlers:
     async def handle_start_league(self, params: dict) -> dict:
         """
         Start the league and create the match schedule.
-        
+
         Uses Round-Robin scheduling for all registered players.
-        
+        Thread-safe: Uses asyncio.Lock to protect schedule/round state.
+
         Returns:
             League start confirmation with schedule.
         """
-        player_ids = list(self.state.registered_players.keys())
-        
-        if len(player_ids) < 2:
-            raise ValueError("Need at least 2 players to start league")
-        
-        # Reset standings for fresh start
-        self.state.standings_repo.reset()
-        self.state.logger.info("STANDINGS_RESET", league_id=self.state.league_id)
-        
-        # Re-initialize all players in standings with 0 stats
-        for player_id, player_data in self.state.registered_players.items():
-            standings = self.state.standings_repo.load()
-            standings_list = standings.get("standings", [])
-            standings_list.append({
-                "player_id": player_id,
-                "display_name": player_data["display_name"],
-                "played": 0,
-                "wins": 0,
-                "draws": 0,
-                "losses": 0,
-                "points": 0,
-                "rank": len(standings_list) + 1
-            })
-            standings["standings"] = standings_list
-            self.state.standings_repo.save(standings)
-        
-        # Create Round-Robin schedule
-        self.state.schedule = self.state.scheduler.create_schedule(player_ids)
-        self.state.current_round = 0
-        
-        self.state.logger.info("LEAGUE_STARTED",
-                               num_players=len(player_ids),
-                               total_rounds=len(self.state.schedule),
-                               total_matches=sum(len(r) for r in self.state.schedule))
-        
-        return self._create_envelope(
-            "LEAGUE_STARTED",
-            num_players=len(player_ids),
-            players=player_ids,
-            total_rounds=len(self.state.schedule),
-            schedule_preview=[
-                {
-                    "round_id": i + 1,
-                    "matches": [
-                        {"match_id": f"R{i+1}M{j+1}", 
-                         "player_A_id": match[0], 
-                         "player_B_id": match[1]}
-                        for j, match in enumerate(round_matches)
-                    ]
-                }
-                for i, round_matches in enumerate(self.state.schedule)
-            ]
-        )
+        # Critical section: protect schedule and round state initialization
+        async with self.state._round_lock:
+            player_ids = list(self.state.registered_players.keys())
+
+            if len(player_ids) < 2:
+                raise ValueError("Need at least 2 players to start league")
+
+            # Reset standings for fresh start
+            self.state.standings_repo.reset()
+            self.state.logger.info("STANDINGS_RESET", league_id=self.state.league_id)
+
+            # Re-initialize all players in standings with 0 stats
+            for player_id, player_data in self.state.registered_players.items():
+                standings = self.state.standings_repo.load()
+                standings_list = standings.get("standings", [])
+                standings_list.append({
+                    "player_id": player_id,
+                    "display_name": player_data["display_name"],
+                    "played": 0,
+                    "wins": 0,
+                    "draws": 0,
+                    "losses": 0,
+                    "points": 0,
+                    "rank": len(standings_list) + 1
+                })
+                standings["standings"] = standings_list
+                self.state.standings_repo.save(standings)
+
+            # Create Round-Robin schedule
+            self.state.schedule = self.state.scheduler.create_schedule(player_ids)
+            self.state.current_round = 0
+
+            self.state.logger.info("LEAGUE_STARTED",
+                                   num_players=len(player_ids),
+                                   total_rounds=len(self.state.schedule),
+                                   total_matches=sum(len(r) for r in self.state.schedule))
+
+            return self._create_envelope(
+                "LEAGUE_STARTED",
+                num_players=len(player_ids),
+                players=player_ids,
+                total_rounds=len(self.state.schedule),
+                schedule_preview=[
+                    {
+                        "round_id": i + 1,
+                        "matches": [
+                            {"match_id": f"R{i+1}M{j+1}",
+                             "player_A_id": match[0],
+                             "player_B_id": match[1]}
+                            for j, match in enumerate(round_matches)
+                        ]
+                    }
+                    for i, round_matches in enumerate(self.state.schedule)
+                ]
+            )
     
     async def handle_announce_round(self, params: dict) -> dict:
         """
         Announce a new round to all players.
-        
+
         Sends ROUND_ANNOUNCEMENT to all registered players.
-        
+        Thread-safe: Uses asyncio.Lock to protect round state changes.
+
         Returns:
             Announcement confirmation.
         """
-        # Move to next round
-        self.state.current_round += 1
-        self.state.matches_completed_this_round = 0
-        
-        round_idx = self.state.current_round - 1
-        
-        if round_idx >= len(self.state.schedule):
-            raise ValueError("No more rounds in schedule")
-        
-        round_matches = self.state.schedule[round_idx]
-        
-        # Select referees for this round
-        referee_ids = list(self.state.registered_referees.keys())
-        if not referee_ids:
-            raise ValueError("No referees registered")
-        
-        # Build match list for announcement - distribute matches across referees
-        # Each referee gets 1 match per round (round-robin assignment)
-        matches = []
-        for i, (player_a, player_b) in enumerate(round_matches):
-            match_id = f"R{self.state.current_round}M{i + 1}"
-            # Assign each match to a different referee (cycling through available referees)
-            referee_id = referee_ids[i % len(referee_ids)]
-            referee_endpoint = self.state.registered_referees[referee_id]["endpoint"]
-            matches.append({
-                "match_id": match_id,
-                "game_type": self.state.league_config.game_type,
-                "player_A_id": player_a,
-                "player_B_id": player_b,
-                "referee_id": referee_id,
-                "referee_endpoint": referee_endpoint
-            })
-        
-        # Create announcement message
-        announcement = self._create_envelope(
-            "ROUND_ANNOUNCEMENT",
-            round_id=self.state.current_round,
-            conversation_id=f"conv-round-{self.state.current_round}-announce",
-            matches=matches
-        )
-        
+        # Critical section: protect round state changes and schedule access
+        async with self.state._round_lock:
+            # Move to next round
+            self.state.current_round += 1
+            self.state.matches_completed_this_round = 0
+
+            round_idx = self.state.current_round - 1
+
+            if round_idx >= len(self.state.schedule):
+                # Revert the increment since we're failing
+                self.state.current_round -= 1
+                raise ValueError("No more rounds in schedule")
+
+            round_matches = self.state.schedule[round_idx]
+
+            # Select referees for this round
+            referee_ids = list(self.state.registered_referees.keys())
+            if not referee_ids:
+                # Revert the increment since we're failing
+                self.state.current_round -= 1
+                raise ValueError("No referees registered")
+
+            # Build match list for announcement - distribute matches across referees
+            # Each referee gets 1 match per round (round-robin assignment)
+            matches = []
+            current_round = self.state.current_round  # Capture for use outside lock
+            for i, (player_a, player_b) in enumerate(round_matches):
+                match_id = f"R{current_round}M{i + 1}"
+                # Assign each match to a different referee (cycling through available referees)
+                referee_id = referee_ids[i % len(referee_ids)]
+                referee_endpoint = self.state.registered_referees[referee_id]["endpoint"]
+                matches.append({
+                    "match_id": match_id,
+                    "game_type": self.state.league_config.game_type,
+                    "player_A_id": player_a,
+                    "player_B_id": player_b,
+                    "referee_id": referee_id,
+                    "referee_endpoint": referee_endpoint
+                })
+
+            # Create announcement message
+            announcement = self._create_envelope(
+                "ROUND_ANNOUNCEMENT",
+                round_id=current_round,
+                conversation_id=f"conv-round-{current_round}-announce",
+                matches=matches
+            )
+
+        # Outside lock: perform I/O operations
         self.state.logger.info("ROUND_ANNOUNCEMENT_SENT",
-                               round_id=self.state.current_round,
+                               round_id=current_round,
                                num_matches=len(matches))
-        
+
         # Send to all players
         notification_results = await self._broadcast_to_players(announcement)
-        
+
         # Notify all referees who have matches in this round
         notified_referees = set()
         for match in matches:
@@ -428,10 +455,10 @@ class LeagueHandlers:
             if ref_id not in notified_referees:
                 await self._notify_referee(ref_id, announcement)
                 notified_referees.add(ref_id)
-        
+
         return self._create_envelope(
             "ROUND_ANNOUNCEMENT_COMPLETE",
-            round_id=self.state.current_round,
+            round_id=current_round,
             matches=matches,
             notifications_sent=len(notification_results)
         )

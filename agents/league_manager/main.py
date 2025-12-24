@@ -12,6 +12,7 @@ Based on Chapters 4, 8, and the league protocol specification.
 """
 
 import sys
+import asyncio
 from pathlib import Path
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -32,32 +33,37 @@ from scheduler import RoundRobinScheduler
 # Global state
 class LeagueState:
     """Global state for the league manager."""
-    
+
     def __init__(self):
         self.config_loader = ConfigLoader()
         self.system_config = self.config_loader.load_system()
         self.league_id = self.system_config.default_league_id
         self.league_config = self.config_loader.load_league(self.league_id)
-        
+
         # Logger
         self.logger = JsonLogger("league_manager", self.league_id)
-        
+
+        # Mutex locks for critical sections (async-safe)
+        self._registration_lock = asyncio.Lock()  # Protects referee/player registration
+        self._round_lock = asyncio.Lock()  # Protects round state changes
+        self._match_result_lock = asyncio.Lock()  # Protects match result processing
+
         # Registered agents (runtime state)
         self.registered_referees: dict = {}  # referee_id -> {endpoint, auth_token, ...}
         self.registered_players: dict = {}   # player_id -> {endpoint, auth_token, ...}
-        
+
         # Counters for ID assignment
         self._referee_counter = 0
         self._player_counter = 0
-        
+
         # Match schedule
         self.schedule: list = []
         self.current_round = 0
         self.matches_completed_this_round = 0
-        
+
         # Scheduler
         self.scheduler = RoundRobinScheduler()
-        
+
         # Standings repository
         self.standings_repo = StandingsRepository(self.league_id)
 

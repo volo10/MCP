@@ -67,48 +67,55 @@ class RefereeHandlers:
             return {"status": "ignored", "message_type": message_type}
     
     async def _handle_round_announcement(self, params: dict) -> dict:
-        """Handle ROUND_ANNOUNCEMENT from League Manager."""
+        """Handle ROUND_ANNOUNCEMENT from League Manager.
+        Thread-safe: Uses asyncio.Lock to protect shared state."""
         round_id = params.get("round_id")
         matches = params.get("matches", [])
-        
+
         self.state.logger.info("ROUND_ANNOUNCEMENT_RECEIVED",
                                round_id=round_id,
                                num_matches=len(matches))
-        
-        # Store player endpoints from the announcement
+
+        # Store player endpoints from the announcement (protected by lock)
         # In a real system, we'd get these from the league manager
         # For now, we'll use the configured agents
         agents_config = self.state.config_loader.load_agents()
-        for player in agents_config.players:
-            self.state.player_endpoints[player.player_id] = player.default_endpoint
-        
+        async with self.state._endpoints_lock:
+            for player in agents_config.players:
+                self.state.player_endpoints[player.player_id] = player.default_endpoint
+
         # Process matches assigned to this referee
-        my_matches = [m for m in matches 
+        my_matches = [m for m in matches
                       if m.get("referee_id") == self.state.referee_id]
-        
-        # Start running each match
+
+        # Start running each match (protected by lock)
         results = []
+        async with self.state._matches_lock:
+            for match_info in my_matches:
+                match_id = match_info.get("match_id")
+                player_a = match_info.get("player_A_id")
+                player_b = match_info.get("player_B_id")
+
+                # Initialize match state
+                self.state.active_matches[match_id] = {
+                    "match_id": match_id,
+                    "round_id": round_id,
+                    "player_a": player_a,
+                    "player_b": player_b,
+                    "state": GameState.WAITING_FOR_PLAYERS.value,
+                    "choices": {},
+                    "result": None
+                }
+                results.append({"match_id": match_id, "status": "started"})
+
+        # Run matches asynchronously (outside lock to avoid blocking)
         for match_info in my_matches:
             match_id = match_info.get("match_id")
             player_a = match_info.get("player_A_id")
             player_b = match_info.get("player_B_id")
-            
-            # Initialize match state
-            self.state.active_matches[match_id] = {
-                "match_id": match_id,
-                "round_id": round_id,
-                "player_a": player_a,
-                "player_b": player_b,
-                "state": GameState.WAITING_FOR_PLAYERS.value,
-                "choices": {},
-                "result": None
-            }
-            
-            # Run match asynchronously
-            asyncio.create_task(self._run_match_async(match_id, round_id, 
+            asyncio.create_task(self._run_match_async(match_id, round_id,
                                                        player_a, player_b))
-            results.append({"match_id": match_id, "status": "started"})
-        
+
         return {
             "status": "accepted",
             "round_id": round_id,
@@ -193,9 +200,10 @@ class RefereeHandlers:
                                                   player_b, game_result, conversation_id)
                         return game_result
             
-            # Step 2: Update state to COLLECTING_CHOICES
-            if match_id in self.state.active_matches:
-                self.state.active_matches[match_id]["state"] = GameState.COLLECTING_CHOICES.value
+            # Step 2: Update state to COLLECTING_CHOICES (protected by lock)
+            async with self.state._matches_lock:
+                if match_id in self.state.active_matches:
+                    self.state.active_matches[match_id]["state"] = GameState.COLLECTING_CHOICES.value
             
             # Step 3: Call choose_parity for both players
             self.state.logger.debug("COLLECTING_CHOICES", match_id=match_id)
@@ -474,15 +482,17 @@ class RefereeHandlers:
     ):
         """
         Finish a match by sending results.
-        
+
         1. Send GAME_OVER to both players
         2. Send MATCH_RESULT_REPORT to League Manager
+        Thread-safe: Uses asyncio.Lock to protect match state updates.
         """
-        # Update match state
-        if match_id in self.state.active_matches:
-            self.state.active_matches[match_id]["state"] = GameState.FINISHED.value
-            self.state.active_matches[match_id]["result"] = self.game.result_to_dict(result)
-        
+        # Update match state (protected by lock)
+        async with self.state._matches_lock:
+            if match_id in self.state.active_matches:
+                self.state.active_matches[match_id]["state"] = GameState.FINISHED.value
+                self.state.active_matches[match_id]["result"] = self.game.result_to_dict(result)
+
         # Step 5: Send GAME_OVER to both players
         await self._send_game_over(match_id, player_a, player_b, result, conversation_id)
         
@@ -612,17 +622,20 @@ class RefereeHandlers:
     # =========================================================================
     
     async def get_match_state(self, params: dict) -> dict:
-        """Get the current state of a match."""
+        """Get the current state of a match.
+        Thread-safe: Uses asyncio.Lock for reading active matches."""
         match_id = params.get("match_id")
-        
-        if match_id in self.state.active_matches:
-            return self.state.active_matches[match_id]
-        
+
+        # Check active matches (protected by lock)
+        async with self.state._matches_lock:
+            if match_id in self.state.active_matches:
+                return self.state.active_matches[match_id].copy()
+
         # Try loading from repository
         match_data = self.state.match_repo.load(match_id)
         if match_data:
             return match_data
-        
+
         raise ValueError(f"Match not found: {match_id}")
     
     # =========================================================================

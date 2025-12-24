@@ -33,39 +33,43 @@ from handlers import RefereeHandlers
 
 class RefereeState:
     """Global state for the referee agent."""
-    
+
     def __init__(self, referee_display_name: str, port: int):
         self.config_loader = ConfigLoader()
         self.system_config = self.config_loader.load_system()
         self.league_id = self.system_config.default_league_id
         self.league_config = self.config_loader.load_league(self.league_id)
-        
+
         # Referee identity (assigned after registration)
         self.referee_id: str = None
         self.auth_token: str = None
         self.display_name = referee_display_name
         self.port = port
         self.endpoint = f"http://localhost:{port}/mcp"
-        
+
         # League Manager endpoint
         lm_port = self.system_config.network.default_league_manager_port
         self.league_manager_endpoint = f"http://localhost:{lm_port}/mcp"
-        
+
         # Logger (will be updated after registration)
         self.logger = JsonLogger(f"referee_{referee_display_name}", self.league_id)
-        
+
+        # Mutex locks for critical sections (async-safe)
+        self._matches_lock = asyncio.Lock()  # Protects active_matches dictionary
+        self._endpoints_lock = asyncio.Lock()  # Protects player_endpoints dictionary
+
         # Active matches
         self.active_matches: dict = {}  # match_id -> match state
-        
+
         # Player endpoints (received from round announcements)
         self.player_endpoints: dict = {}  # player_id -> endpoint
-        
+
         # Match repository
         self.match_repo = MatchRepository(self.league_id)
-        
+
         # Game logic
         self.game = EvenOddGame()
-        
+
         # Registration status
         self.registered = False
 
