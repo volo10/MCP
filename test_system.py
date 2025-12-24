@@ -36,7 +36,7 @@ def test_sdk_imports():
         LeagueConfig,
     )
     
-    print("  ✓ All SDK components imported successfully")
+    print("  [OK] All SDK components imported successfully")
     return True
 
 
@@ -51,23 +51,23 @@ def test_config_loading():
     # Test system config
     system = loader.load_system()
     assert system.protocol_version == "league.v2", "Protocol version mismatch"
-    print(f"  ✓ System config: protocol={system.protocol_version}")
+    print(f"  [OK] System config: protocol={system.protocol_version}")
     
     # Test agents config
     agents = loader.load_agents()
     assert len(agents.referees) >= 2, "Need at least 2 referees"
     assert len(agents.players) >= 4, "Need at least 4 players"
-    print(f"  ✓ Agents config: {len(agents.referees)} referees, {len(agents.players)} players")
+    print(f"  [OK] Agents config: {len(agents.referees)} referees, {len(agents.players)} players")
     
     # Test league config
     league = loader.load_league("league_2025_even_odd")
     assert league.game_type == "even_odd", "Game type mismatch"
-    print(f"  ✓ League config: {league.display_name}")
+    print(f"  [OK] League config: {league.display_name}")
     
     # Test games registry
     games = loader.load_games_registry()
     assert len(games.games) >= 1, "Need at least 1 game type"
-    print(f"  ✓ Games registry: {len(games.games)} game types")
+    print(f"  [OK] Games registry: {len(games.games)} game types")
     
     return True
 
@@ -116,7 +116,7 @@ def test_envelope_format():
         ts = envelope["timestamp"]
         assert ts.endswith("Z"), "Timestamp must end with Z (UTC)"
         
-        print(f"  ✓ {message_type}: valid envelope")
+        print(f"  [OK] {message_type}: valid envelope")
     
     return True
 
@@ -152,19 +152,19 @@ def test_jsonrpc_format():
     assert request["jsonrpc"] == "2.0"
     assert "method" in request
     assert "params" in request
-    print("  ✓ Request format valid")
+    print("  [OK] Request format valid")
     
     # Test response format
     response = create_response({"status": "ACCEPTED"}, 1)
     assert response["jsonrpc"] == "2.0"
     assert "result" in response
-    print("  ✓ Response format valid")
+    print("  [OK] Response format valid")
     
     # Test error format
     error = create_error(-32600, "Invalid Request", 1)
     assert "error" in error
     assert "code" in error["error"]
-    print("  ✓ Error format valid")
+    print("  [OK] Error format valid")
     
     return True
 
@@ -182,25 +182,25 @@ def test_game_logic():
     assert game.validate_choice("even") == True
     assert game.validate_choice("odd") == True
     assert game.validate_choice("invalid") == False
-    print("  ✓ Choice validation works")
+    print("  [OK] Choice validation works")
     
     # Test number drawing
     for _ in range(10):
         num = game.draw_number()
         assert 1 <= num <= 10, f"Number out of range: {num}"
-    print("  ✓ Number drawing works (1-10)")
+    print("  [OK] Number drawing works (1-10)")
     
     # Test winner determination
     result = game.determine_winner("P01", "P02", "even", "odd", drawn_number=8)
     assert result.winner_player_id == "P01", "Wrong winner"
     assert result.status == MatchResult.WIN
-    print("  ✓ Winner determination works")
+    print("  [OK] Winner determination works")
     
     # Test draw scenario
     result = game.determine_winner("P01", "P02", "even", "even", drawn_number=4)
     assert result.status == MatchResult.DRAW
     assert result.winner_player_id is None
-    print("  ✓ Draw detection works")
+    print("  [OK] Draw detection works")
     
     return True
 
@@ -222,14 +222,14 @@ def test_strategy():
     
     # Should be roughly 50/50 (allow some variance)
     assert 30 <= even_count <= 70, f"Distribution off: {even_count}/100 even"
-    print(f"  ✓ Random strategy: {even_count}% even, {odd_count}% odd")
+    print(f"  [OK] Random strategy: {even_count}% even, {odd_count}% odd")
     
     # Test strategy manager
     manager = StrategyManager("random")
     choice = manager.choose()
     assert choice in ["even", "odd"]
     assert choice == choice.lower(), "Choice must be lowercase"
-    print("  ✓ Strategy manager works")
+    print("  [OK] Strategy manager works")
     
     return True
 
@@ -246,7 +246,7 @@ def test_resilience():
     
     delays = [client._calculate_delay(i) for i in range(4)]
     assert delays[0] < delays[1] < delays[2], "Exponential backoff not working"
-    print(f"  ✓ Exponential backoff: {[round(d, 1) for d in delays[:3]]}s")
+    print(f"  [OK] Exponential backoff: {[round(d, 1) for d in delays[:3]]}s")
     
     # Test circuit breaker
     cb = CircuitBreaker(failure_threshold=3)
@@ -259,12 +259,12 @@ def test_resilience():
     
     assert cb.state.value == "OPEN", "Should be open after threshold"
     assert cb.can_execute() == False, "Should reject when open"
-    print("  ✓ Circuit breaker works")
+    print("  [OK] Circuit breaker works")
     
     # Test error codes
     assert ErrorCode.TIMEOUT_ERROR.value == "E001"
     assert ErrorCode.CONNECTION_ERROR.value == "E009"
-    print("  ✓ Error codes defined")
+    print("  [OK] Error codes defined")
     
     return True
 
@@ -279,13 +279,13 @@ def test_repositories():
     standings = StandingsRepository("test_league")
     data = standings.load()
     assert "standings" in data
-    print("  ✓ StandingsRepository works")
+    print("  [OK] StandingsRepository works")
     
     # Test player history repository
     history = PlayerHistoryRepository("test_player")
     data = history.load()
     assert "matches" in data
-    print("  ✓ PlayerHistoryRepository works")
+    print("  [OK] PlayerHistoryRepository works")
     
     return True
 
@@ -317,7 +317,7 @@ def run_all_tests():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"  ✗ FAILED: {e}")
+            print(f"  [FAIL] FAILED: {e}")
             failed += 1
         print()
     

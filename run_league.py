@@ -216,7 +216,7 @@ class LeagueRunner:
             self.log("League Manager did not become available")
             return False
         
-        self.log("✓ League Manager ready on port 8000")
+        self.log("[OK] League Manager ready on port 8000")
         time.sleep(1)  # Give it a moment to fully initialize
         
         # Step 2: Start Referees
@@ -239,7 +239,7 @@ class LeagueRunner:
                 self.log(f"{config['name']} did not become available")
                 return False
             
-            self.log(f"✓ {config['name']} ready on port {config['port']}")
+            self.log(f"[OK] {config['name']} ready on port {config['port']}")
             time.sleep(0.5)
         
         # Step 3: Start Players
@@ -266,7 +266,7 @@ class LeagueRunner:
                 self.log(f"{config['name']} did not become available")
                 return False
             
-            self.log(f"✓ {config['name']} ready on port {config['port']} (strategy: {config['strategy']})")
+            self.log(f"[OK] {config['name']} ready on port {config['port']} (strategy: {config['strategy']})")
             time.sleep(0.5)
         
         print()
@@ -417,7 +417,7 @@ class LeagueRunner:
                                 if current_round >= total_rounds and total_rounds > 0:
                                     print()
                                     print("=" * 60)
-                                    print("🏆  LEAGUE COMPLETED!  🏆")
+                                    print("***  LEAGUE COMPLETED!  ***")
                                     print("=" * 60)
                                     # Get final standings
                                     standings_resp = httpx.get("http://localhost:8000/standings", timeout=5.0)
@@ -425,13 +425,13 @@ class LeagueRunner:
                                     standings_list = standings.get("standings", [])
                                     if standings_list:
                                         champion = standings_list[0]
-                                        print(f"\n🥇 CHAMPION: {champion.get('player_id')} - {champion.get('display_name', '')}")
+                                        print(f"\n[1st] CHAMPION: {champion.get('player_id')} - {champion.get('display_name', '')}")
                                         print(f"   Points: {champion.get('points', 0)}")
                                         print(f"   Record: W:{champion.get('wins', 0)} D:{champion.get('draws', 0)} L:{champion.get('losses', 0)}")
                                     print("\nFinal Standings:")
                                     print("-" * 50)
                                     for i, entry in enumerate(standings_list):
-                                        medal = ["🥇", "🥈", "🥉", "  "][min(i, 3)]
+                                        medal = ["[1st]", "[2nd]", "[3rd]", "     "][min(i, 3)]
                                         print(f"  {medal} #{entry.get('rank', '?')}: {entry.get('player_id', '?')} - "
                                               f"{entry.get('points', 0)} pts "
                                               f"(W:{entry.get('wins', 0)} D:{entry.get('draws', 0)} L:{entry.get('losses', 0)})")
@@ -448,7 +448,7 @@ class LeagueRunner:
                             if "No more rounds" in msg:
                                 print()
                                 print("=" * 60)
-                                print("🏆  LEAGUE ALREADY COMPLETED!  🏆")
+                                print("***  LEAGUE ALREADY COMPLETED!  ***")
                                 print("=" * 60)
                                 # Show final standings
                                 standings_resp = httpx.get("http://localhost:8000/standings", timeout=5.0)
@@ -456,7 +456,7 @@ class LeagueRunner:
                                 standings_list = standings.get("standings", [])
                                 if standings_list:
                                     champion = standings_list[0]
-                                    print(f"\n🥇 CHAMPION: {champion.get('player_id')} - {champion.get('display_name', '')}")
+                                    print(f"\n[1st] CHAMPION: {champion.get('player_id')} - {champion.get('display_name', '')}")
                                 print("\nType 'start' to begin a new league.")
                                 print()
                             else:

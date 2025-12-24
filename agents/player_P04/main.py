@@ -181,22 +181,22 @@ async def register_with_league_manager():
 
                 state.logger.info("REGISTRATION_SUCCESS",
                                   player_id=state.player_id)
-                print(f"✓ Registered as {state.player_id}")
+                print(f"[OK] Registered as {state.player_id}")
                 return True
             else:
                 reason = result.get("reason", "Unknown")
                 state.logger.error("REGISTRATION_REJECTED", reason=reason)
-                print(f"✗ Registration rejected: {reason}")
+                print(f"[FAIL] Registration rejected: {reason}")
                 return False
         else:
             status = response.status_code if response else "No response"
             state.logger.error("REGISTRATION_FAILED", status=status)
-            print(f"✗ Registration failed: {status}")
+            print(f"[FAIL] Registration failed: {status}")
             return False
             
     except Exception as e:
         state.logger.error("REGISTRATION_FAILED", error=str(e))
-        print(f"✗ Registration error: {e}")
+        print(f"[FAIL] Registration error: {e}")
         return False
 
 

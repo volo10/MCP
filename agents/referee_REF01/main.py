@@ -165,28 +165,28 @@ async def register_with_league_manager():
                     
                     state.logger.info("REGISTRATION_SUCCESS",
                                       referee_id=state.referee_id)
-                    print(f"✓ Registered as {state.referee_id}")
+                    print(f"[OK] Registered as {state.referee_id}")
                     return True
                 else:
                     reason = result.get("reason", "Unknown")
                     state.logger.error("REGISTRATION_REJECTED", reason=reason)
-                    print(f"✗ Registration rejected: {reason}")
+                    print(f"[FAIL] Registration rejected: {reason}")
                     return False
             else:
                 state.logger.error("REGISTRATION_FAILED",
                                    status_code=response.status_code)
-                print(f"✗ Registration failed: HTTP {response.status_code}")
+                print(f"[FAIL] Registration failed: HTTP {response.status_code}")
                 return False
                 
         except httpx.ConnectError:
             state.logger.error("REGISTRATION_FAILED",
                                error="Could not connect to League Manager")
-            print(f"✗ Could not connect to League Manager at {state.league_manager_endpoint}")
+            print(f"[FAIL] Could not connect to League Manager at {state.league_manager_endpoint}")
             print("  Make sure the League Manager is running first!")
             return False
         except Exception as e:
             state.logger.error("REGISTRATION_FAILED", error=str(e))
-            print(f"✗ Registration error: {e}")
+            print(f"[FAIL] Registration error: {e}")
             return False
 
 
